@@ -21,6 +21,8 @@ export * from './share';
 export * from './pluginAuth';
 /* Memories */
 export * from './memory';
+/* Notes */
+export * from './note';
 /* Prompts */
 export * from './prompts';
 /* Skills */
