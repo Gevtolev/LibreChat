@@ -13,12 +13,13 @@ export function createNoteMethods(mongoose: typeof import('mongoose')) {
   }: t.CreateNoteParams): Promise<t.INoteLean> {
     const Note = mongoose.models.Note;
     const doc = await Note.create({ user, title, content, tags, source });
-    return doc.toObject() as t.INoteLean;
+    const note: t.INoteLean = doc.toObject();
+    return note;
   }
 
   async function getNoteById({ user, id }: t.GetNoteParams): Promise<t.INoteLean | null> {
     const Note = mongoose.models.Note;
-    return (await Note.findOne({ _id: id, user }).lean()) as t.INoteLean | null;
+    return await Note.findOne({ _id: id, user }).lean<t.INoteLean | null>();
   }
 
   async function getUserNotes({ user, tags }: t.GetUserNotesParams): Promise<t.INoteLean[]> {
@@ -44,11 +45,11 @@ export function createNoteMethods(mongoose: typeof import('mongoose')) {
       ops.$addToSet = { links: { $each: update.addLinks.map((l) => new Types.ObjectId(l)) } };
     }
     if (Object.keys(ops).length === 0) {
-      return (await Note.findOne({ _id: id, user }).lean()) as t.INoteLean | null;
+      return await Note.findOne({ _id: id, user }).lean<t.INoteLean | null>();
     }
-    return (await Note.findOneAndUpdate({ _id: id, user }, ops, { new: true }).lean()) as
-      | t.INoteLean
-      | null;
+    return await Note.findOneAndUpdate({ _id: id, user }, ops, {
+      new: true,
+    }).lean<t.INoteLean | null>();
   }
 
   async function deleteNote({ user, id }: t.DeleteNoteParams): Promise<t.NoteDeleteResult> {
