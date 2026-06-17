@@ -27,13 +27,13 @@ export function createNoteMethods(mongoose: typeof import('mongoose')) {
     if (tags && tags.length > 0) {
       filter.tags = { $in: tags };
     }
-    return (await Note.find(filter).sort({ updatedAt: -1 }).lean()) as unknown as t.INoteLean[];
+    return await Note.find(filter).sort({ updatedAt: -1 }).lean<t.INoteLean[]>();
   }
 
   async function updateNote({ user, id, update }: t.UpdateNoteParams): Promise<t.INoteLean | null> {
     const Note = mongoose.models.Note;
     const ops: UpdateQuery<INote> = {};
-    const set: Record<string, string | string[]> = {};
+    const set: Partial<Pick<INote, 'title' | 'content' | 'tags'>> = {};
     if (update.title !== undefined) set.title = update.title;
     if (update.content !== undefined) set.content = update.content;
     if (update.tags !== undefined) set.tags = update.tags;
@@ -75,7 +75,7 @@ export function createNoteMethods(mongoose: typeof import('mongoose')) {
     if (tags && tags.length > 0) {
       filter.tags = { $in: tags };
     }
-    return (await Note.find(filter).sort({ updatedAt: -1 }).limit(limit).lean()) as unknown as t.INoteLean[];
+    return await Note.find(filter).sort({ updatedAt: -1 }).limit(limit).lean<t.INoteLean[]>();
   }
 
   async function deleteAllUserNotes(user: string | Types.ObjectId): Promise<number> {
