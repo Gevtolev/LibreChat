@@ -6,11 +6,13 @@ import {
   documentParserMimeTypes,
   applicationMimeTypes,
 } from 'librechat-data-provider';
-import { parseTextNative } from '~/files/text';
 import { parseDocument } from '~/files/documents/crud';
+import { processAudioFile } from '~/files/audio';
 import { countTokens } from '~/utils/tokenizer';
+import { parseTextNative } from '~/files/text';
 import { captionImage } from './caption';
 import type { IngestKind, IngestParams, IngestResult } from './types';
+import type { STTService } from '~/types';
 
 const PDF_MIME = 'application/pdf';
 
@@ -31,8 +33,7 @@ async function toResult(kind: IngestKind, derivedText: string): Promise<IngestRe
   return { kind, derivedText, tokenCount };
 }
 
-export async function ingestFile({ file }: IngestParams): Promise<IngestResult> {
-  // req is forwarded to image/audio branches in Task 2/3
+export async function ingestFile({ file, req, sttService }: IngestParams): Promise<IngestResult> {
   const kind = routeByMime(file.mimetype);
   // parsers declare Multer.File but read only path/size/mimetype/originalname, all on IngestFile
   const multerFile = file as Express.Multer.File;
@@ -59,7 +60,18 @@ export async function ingestFile({ file }: IngestParams): Promise<IngestResult> 
     return toResult('image', caption);
   }
   if (kind === 'audio') {
-    throw new Error('audio ingest not yet implemented (Task 3)');
+    if (!req || !sttService) {
+      return toResult('audio', '');
+    }
+    // sttService is typed `unknown` on IngestParams (boundary exception: STTService lives in api/ which
+    // packages/api must not import). processAudioFile's own parameter type (STTService) enforces the
+    // contract at the call site in the api/ caller.
+    const { text } = await processAudioFile({
+      req,
+      file: file as Express.Multer.File,
+      sttService: sttService as STTService,
+    });
+    return toResult('audio', text);
   }
 
   return toResult('text', '');
