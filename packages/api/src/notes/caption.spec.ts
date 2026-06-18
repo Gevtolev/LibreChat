@@ -3,6 +3,7 @@ jest.mock('@librechat/agents', () => ({
   Providers: { OPENAI: 'openAI' },
   initializeModel: jest.fn(() => ({ invoke: mockInvoke })),
 }));
+jest.mock('@librechat/data-schemas', () => ({ logger: { warn: jest.fn() } }));
 
 import { captionImage } from './caption';
 
@@ -30,5 +31,10 @@ describe('captionImage', () => {
     const caption = await captionImage({ filePath: __filename, mimetype: 'image/png' });
     expect(caption).toBe('');
     expect(mockInvoke).not.toHaveBeenCalled();
+  });
+
+  test('returns empty string (no throw) when model.invoke rejects', async () => {
+    mockInvoke.mockRejectedValue(new Error('boom'));
+    await expect(captionImage({ filePath: __filename, mimetype: 'image/png' })).resolves.toBe('');
   });
 });

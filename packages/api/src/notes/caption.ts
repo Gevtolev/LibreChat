@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import { logger } from '@librechat/data-schemas';
 import { initializeModel, Providers } from '@librechat/agents';
 import { HumanMessage } from '@librechat/agents/langchain/messages';
 
@@ -54,9 +55,14 @@ export async function captionImage({ filePath, mimetype }: CaptionParams): Promi
       { type: 'text', text: CAPTION_PROMPT },
     ],
   });
-  const response = await model.invoke([message]);
-  if (!response || typeof response !== 'object' || !('content' in response)) {
+  try {
+    const response = await model.invoke([message]);
+    if (!response || typeof response !== 'object' || !('content' in response)) {
+      return '';
+    }
+    return extractText((response as { content: unknown }).content).trim();
+  } catch (err) {
+    logger.warn('[notes] image caption failed', err);
     return '';
   }
-  return extractText((response as { content: unknown }).content).trim();
 }

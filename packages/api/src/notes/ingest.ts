@@ -6,6 +6,7 @@ import {
   documentParserMimeTypes,
   applicationMimeTypes,
 } from 'librechat-data-provider';
+import { logger } from '@librechat/data-schemas';
 import { parseDocument } from '~/files/documents/crud';
 import { processAudioFile } from '~/files/audio';
 import { countTokens } from '~/utils/tokenizer';
@@ -63,15 +64,19 @@ export async function ingestFile({ file, req, sttService }: IngestParams): Promi
     if (!req || !sttService) {
       return toResult('audio', '');
     }
-    // sttService is typed `unknown` on IngestParams (boundary exception: STTService lives in api/ which
-    // packages/api must not import). processAudioFile's own parameter type (STTService) enforces the
-    // contract at the call site in the api/ caller.
-    const { text } = await processAudioFile({
-      req,
-      file: file as Express.Multer.File,
-      sttService: sttService as STTService,
-    });
-    return toResult('audio', text);
+    // STTService is a structural interface local to packages/api (~/types). The concrete
+    // implementation is injected by the api/ caller, so packages/api never imports the api/ class.
+    try {
+      const { text } = await processAudioFile({
+        req,
+        file: multerFile,
+        sttService: sttService as STTService,
+      });
+      return toResult('audio', text);
+    } catch (err) {
+      logger.warn('[notes] audio transcription failed', err);
+      return toResult('audio', '');
+    }
   }
 
   return toResult('text', '');

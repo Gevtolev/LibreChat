@@ -1,5 +1,6 @@
 jest.mock('./caption', () => ({ captionImage: jest.fn() }));
 jest.mock('~/files/audio', () => ({ processAudioFile: jest.fn() }));
+jest.mock('@librechat/data-schemas', () => ({ logger: { warn: jest.fn() } }));
 
 import path from 'path';
 import { captionImage } from './caption';
@@ -65,7 +66,7 @@ describe('ingestFile — text', () => {
 });
 
 describe('ingestFile — image', () => {
-  test('returns caption as derivedText', async () => {
+  test('returns caption only (OCR deferred to P1)', async () => {
     (captionImage as jest.Mock).mockResolvedValue('A handwritten to-do list.');
     const result = await ingestFile({
       file: { path: '/tmp/note.png', mimetype: 'image/png', originalname: 'note.png', size: 100 },
@@ -76,6 +77,7 @@ describe('ingestFile — image', () => {
 });
 
 describe('ingestFile — audio', () => {
+  // shape irrelevant — processAudioFile is mocked
   const fakeSttService = {};
   const fakeReq = {
     config: { speech: { stt: { openai: { apiKey: 'k', model: 'whisper-1' } } } },
@@ -118,5 +120,16 @@ describe('ingestFile — audio', () => {
     expect(result.kind).toBe('audio');
     expect(result.derivedText).toBe('');
     expect(processAudioFile).not.toHaveBeenCalled();
+  });
+
+  test('returns empty derivedText (no throw) when processAudioFile rejects', async () => {
+    (processAudioFile as jest.Mock).mockRejectedValue(new Error('boom'));
+    const result = await ingestFile({
+      file: { path: '/tmp/voice.m4a', mimetype: 'audio/mp4', originalname: 'voice.m4a', size: 100 },
+      req: fakeReq,
+      sttService: fakeSttService,
+    });
+    expect(result.kind).toBe('audio');
+    expect(result.derivedText).toBe('');
   });
 });

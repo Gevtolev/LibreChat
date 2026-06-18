@@ -107,6 +107,8 @@ note.index({ user: 1, tags: 1 });
 
 新代码主要是**编排**(`packages/api/src/notes/ingest.ts`),解析全部复用现有零件。
 
+> **P1 延期说明**: 视频 → STT 转写为 P1(当前返回空文本)。图片 OCR 为 P1(MVP 仅做 vision caption,因为 `performOCR` 需要远端/签名 URL,本地文件路径不支持)。
+
 ## 8. 核心流程
 
 - **入料**:见 §7。
