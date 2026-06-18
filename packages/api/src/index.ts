@@ -57,6 +57,9 @@ export * from './cache';
 export * from './stream';
 /* Diagnostics */
 export { memoryDiagnostics } from './utils/memory';
+/* Notes */
+export { ingestFile, routeByMime } from './notes/ingest';
+export type { IngestKind, IngestResult, IngestParams, IngestFile } from './notes/types';
 /* types */
 export type * from './mcp/types';
 export type * from './flow/types';
