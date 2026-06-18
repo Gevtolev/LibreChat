@@ -21,7 +21,7 @@ const note: Schema<INote> = new Schema(
     notebookId: { type: Schema.Types.ObjectId, ref: 'Notebook', index: true },
     title: { type: String, required: true },
     content: { type: String, default: '' },
-    tags: { type: [String], index: true },
+    tags: { type: [String] },
     links: [{ type: Schema.Types.ObjectId, ref: 'Note' }],
     attachments: { type: [noteAttachment], default: undefined },
     source: { type: String, enum: ['manual', 'upload', 'clip'], default: 'manual' },

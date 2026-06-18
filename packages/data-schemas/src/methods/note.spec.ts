@@ -7,7 +7,9 @@ let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
-  mongoose.models.Note || mongoose.model('Note', noteSchema);
+  if (!mongoose.models.Note) {
+    mongoose.model('Note', noteSchema);
+  }
   await mongoose.connect(mongoServer.getUri());
 });
 
@@ -66,10 +68,12 @@ describe('Note methods', () => {
 
   test('getUserNotes lists only the user notes, newest first', async () => {
     await methods.createNote({ user, title: 'first' });
+    await new Promise((r) => setTimeout(r, 5));
     await methods.createNote({ user, title: 'second' });
     await methods.createNote({ user: otherUser, title: 'theirs' });
     const notes = await methods.getUserNotes({ user });
     expect(notes).toHaveLength(2);
+    expect(notes[0].title).toBe('second');
   });
 
   test('updateNote sets fields and addLinks', async () => {
@@ -86,7 +90,12 @@ describe('Note methods', () => {
   });
 
   test('searchNotes matches title/content, respects tags + limit', async () => {
-    await methods.createNote({ user, title: 'pricing ideas', content: 'subscription', tags: ['biz'] });
+    await methods.createNote({
+      user,
+      title: 'pricing ideas',
+      content: 'subscription',
+      tags: ['biz'],
+    });
     await methods.createNote({ user, title: 'random', content: 'nothing here', tags: ['misc'] });
     const byKeyword = await methods.searchNotes({ user, query: 'subscription' });
     expect(byKeyword).toHaveLength(1);

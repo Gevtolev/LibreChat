@@ -63,7 +63,7 @@ const note: Schema<INote> = new Schema({
   notebookId:  { type: Schema.Types.ObjectId, ref: 'Notebook', index: true }, // P1 预留,P0 恒空
   title:       { type: String, required: true },
   content:     { type: String, default: '' },     // markdown(已文本化)
-  tags:        { type: [String], index: true },
+  tags:        { type: [String] },
   links:       [{ type: Schema.Types.ObjectId, ref: 'Note' }], // 双链
   attachments: [{
     file_id:     { type: String, required: true }, // 复用 file.file_id,原件在 R2
