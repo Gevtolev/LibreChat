@@ -24,4 +24,11 @@ describe('captionImage', () => {
     const caption = await captionImage({ filePath: __filename, mimetype: 'image/png' });
     expect(caption).toBe('Two cats.');
   });
+
+  test('returns empty string when OPENAI_API_KEY is missing', async () => {
+    delete process.env.OPENAI_API_KEY;
+    const caption = await captionImage({ filePath: __filename, mimetype: 'image/png' });
+    expect(caption).toBe('');
+    expect(mockInvoke).not.toHaveBeenCalled();
+  });
 });

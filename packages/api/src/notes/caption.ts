@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import { initializeModel, Providers } from '@librechat/agents';
 import { HumanMessage } from '@librechat/agents/langchain/messages';
 
@@ -19,7 +19,11 @@ function extractText(content: unknown): string {
     return content
       .filter(
         (b): b is { type: string; text: string } =>
-          typeof b === 'object' && b !== null && (b as { type?: string }).type === 'text',
+          typeof b === 'object' &&
+          b !== null &&
+          'type' in b &&
+          'text' in b &&
+          (b as { type: string }).type === 'text',
       )
       .map((b) => b.text)
       .join('');
@@ -32,7 +36,7 @@ export async function captionImage({ filePath, mimetype }: CaptionParams): Promi
   if (!apiKey) {
     return '';
   }
-  const base64 = fs.readFileSync(filePath).toString('base64');
+  const base64 = (await fs.readFile(filePath)).toString('base64');
   const model = initializeModel({
     provider: Providers.OPENAI,
     clientOptions: {
@@ -50,6 +54,9 @@ export async function captionImage({ filePath, mimetype }: CaptionParams): Promi
       { type: 'text', text: CAPTION_PROMPT },
     ],
   });
-  const response = (await model.invoke([message])) as { content: unknown };
-  return extractText(response.content).trim();
+  const response = await model.invoke([message]);
+  if (!response || typeof response !== 'object' || !('content' in response)) {
+    return '';
+  }
+  return extractText((response as { content: unknown }).content).trim();
 }
