@@ -28,6 +28,9 @@ beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
   require('~/db/models'); // registers all models incl. Note
+  if (!mongoose.modelNames().includes('Note')) {
+    throw new Error('Note model not registered — ensure Task 1 added it to createModels()');
+  }
   const notesRoutes = require('~/server/routes/notes');
   app = express();
   app.use(express.json());
@@ -68,6 +71,14 @@ describe('Notes routes', () => {
     mockState.user = { id: new mongoose.Types.ObjectId().toString() };
     const res = await request(app).get('/api/notes');
     expect(res.body.notes).toHaveLength(0);
+  });
+
+  test('GET /:id returns the note', async () => {
+    const created = await request(app).post('/api/notes').send({ title: 'X', content: 'body' });
+    const res = await request(app).get(`/api/notes/${created.body._id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe('X');
+    expect(res.body.content).toBe('body');
   });
 
   test('PATCH updates and DELETE removes', async () => {
