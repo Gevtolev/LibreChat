@@ -47,7 +47,12 @@ describe('ingestFile — text', () => {
 
   test('video is unsupported (empty derivedText, no throw)', async () => {
     const result = await ingestFile({
-      file: { path: '/tmp/x.mp4', mimetype: 'video/mp4', originalname: 'x.mp4', size: 10 },
+      file: {
+        path: fixture('sample.txt'),
+        mimetype: 'video/mp4',
+        originalname: 'sample.mp4',
+        size: 10,
+      },
     });
     expect(result.kind).toBe('video');
     expect(result.derivedText).toBe('');

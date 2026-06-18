@@ -9,7 +9,7 @@ import {
 import { parseTextNative } from '~/files/text';
 import { parseDocument } from '~/files/documents/crud';
 import { countTokens } from '~/utils/tokenizer';
-import type { IngestKind, IngestFile, IngestParams, IngestResult } from './types';
+import type { IngestKind, IngestParams, IngestResult } from './types';
 
 const PDF_MIME = 'application/pdf';
 
@@ -17,15 +17,12 @@ export function routeByMime(mimetype: string): IngestKind {
   if (imageMimeTypes.test(mimetype)) return 'image';
   if (audioMimeTypes.test(mimetype)) return 'audio';
   if (videoMimeTypes.test(mimetype)) return 'video';
+  // PDF must be matched before the documentParserMimeTypes scan: that array
+  // already includes application/pdf, so otherwise PDFs would route as 'doc'.
   if (mimetype === PDF_MIME) return 'pdf';
   if (documentParserMimeTypes.some((re) => re.test(mimetype))) return 'doc';
   if (textMimeTypes.test(mimetype) || applicationMimeTypes.test(mimetype)) return 'text';
   return 'text';
-}
-
-/** Cast IngestFile to the Express.Multer.File subset used by parse functions. */
-function toMulterFile(file: IngestFile): Express.Multer.File {
-  return file as Express.Multer.File;
 }
 
 async function toResult(kind: IngestKind, derivedText: string): Promise<IngestResult> {
@@ -34,15 +31,18 @@ async function toResult(kind: IngestKind, derivedText: string): Promise<IngestRe
 }
 
 export async function ingestFile({ file }: IngestParams): Promise<IngestResult> {
+  // req is forwarded to image/audio branches in Task 2/3
   const kind = routeByMime(file.mimetype);
+  // parsers declare Multer.File but read only path/size/mimetype/originalname, all on IngestFile
+  const multerFile = file as Express.Multer.File;
 
   if (kind === 'text') {
-    const { text } = await parseTextNative(toMulterFile(file));
+    const { text } = await parseTextNative(multerFile);
     return toResult('text', text);
   }
 
   if (kind === 'pdf' || kind === 'doc') {
-    const { text } = await parseDocument({ file: toMulterFile(file) });
+    const { text } = await parseDocument({ file: multerFile });
     return toResult(kind, text);
   }
 
