@@ -9,6 +9,7 @@ import {
 import { parseTextNative } from '~/files/text';
 import { parseDocument } from '~/files/documents/crud';
 import { countTokens } from '~/utils/tokenizer';
+import { captionImage } from './caption';
 import type { IngestKind, IngestParams, IngestResult } from './types';
 
 const PDF_MIME = 'application/pdf';
@@ -52,7 +53,10 @@ export async function ingestFile({ file }: IngestParams): Promise<IngestResult> 
 
   // image / audio branches added in Task 2 / Task 3
   if (kind === 'image') {
-    throw new Error('image ingest not yet implemented (Task 2)');
+    // OCR (Mistral) requires a remote/signed URL — local file paths are not supported.
+    // OCR integration is deferred to a P1 follow-up that uploads the file and obtains a signed URL.
+    const caption = await captionImage({ filePath: file.path, mimetype: file.mimetype });
+    return toResult('image', caption);
   }
   if (kind === 'audio') {
     throw new Error('audio ingest not yet implemented (Task 3)');

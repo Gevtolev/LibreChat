@@ -1,4 +1,7 @@
+jest.mock('./caption', () => ({ captionImage: jest.fn() }));
+
 import path from 'path';
+import { captionImage } from './caption';
 import { routeByMime, ingestFile } from './ingest';
 
 const fixture = (name: string) => path.join(__dirname, '__fixtures__', name);
@@ -56,5 +59,16 @@ describe('ingestFile — text', () => {
     });
     expect(result.kind).toBe('video');
     expect(result.derivedText).toBe('');
+  });
+});
+
+describe('ingestFile — image', () => {
+  test('returns caption as derivedText', async () => {
+    (captionImage as jest.Mock).mockResolvedValue('A handwritten to-do list.');
+    const result = await ingestFile({
+      file: { path: '/tmp/note.png', mimetype: 'image/png', originalname: 'note.png', size: 100 },
+    });
+    expect(result.kind).toBe('image');
+    expect(result.derivedText).toContain('A handwritten to-do list.');
   });
 });
