@@ -12,6 +12,7 @@ export * from './legacy';
 export * from './memory';
 export * from './orphans';
 export * from './migration';
+export * from './parameters';
 export * from './openai';
 export * from './transactions';
 export * from './usage';

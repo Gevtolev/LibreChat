@@ -9,6 +9,7 @@ const {
   refreshListAvatars,
   collectEdgeAgentIds,
   mergeAgentOcrConversion,
+  sanitizeModelParameters,
   MAX_AVATAR_REFRESH_AGENTS,
   collectToolResourceFileIds,
   convertOcrToContextInPlace,
@@ -319,7 +320,10 @@ const createAgentHandler = async (req, res) => {
     const { tools = [], ...agentData } = removeNullishValues(validatedData);
 
     if (agentData.model_parameters && typeof agentData.model_parameters === 'object') {
-      agentData.model_parameters = removeNullishValues(agentData.model_parameters, true);
+      agentData.model_parameters = removeNullishValues(
+        sanitizeModelParameters(agentData.model_parameters),
+        true,
+      );
     }
 
     const { id: userId, role: userRole } = req.user;
@@ -536,7 +540,10 @@ const updateAgentHandler = async (req, res) => {
     const updateData = removeNullishValues(rest);
 
     if (updateData.model_parameters && typeof updateData.model_parameters === 'object') {
-      updateData.model_parameters = removeNullishValues(updateData.model_parameters, true);
+      updateData.model_parameters = removeNullishValues(
+        sanitizeModelParameters(updateData.model_parameters),
+        true,
+      );
     }
 
     if (avatarField === null) {
