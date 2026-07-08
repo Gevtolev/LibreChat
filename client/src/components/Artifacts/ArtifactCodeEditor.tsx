@@ -5,6 +5,7 @@ import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import type { Artifact } from '~/common';
 import { useMutationState, useCodeState } from '~/Providers/EditorContext';
+import { getResponseStatus } from '~/utils/errors';
 import { useArtifactsContext } from '~/Providers';
 import { useEditArtifact } from '~/data-provider';
 
@@ -78,9 +79,14 @@ export const ArtifactCodeEditor = function ArtifactCodeEditor({
     onSuccess: () => {
       setIsMutating(false);
       setCurrentUpdate(null);
+      failedContentRef.current = null;
     },
-    onError: () => {
+    onError: (error) => {
+      if (getResponseStatus(error) === 400 && currentUpdateRef.current != null) {
+        failedContentRef.current = currentUpdateRef.current;
+      }
       setIsMutating(false);
+      setCurrentUpdate(null);
     },
   });
 
@@ -89,6 +95,7 @@ export const ArtifactCodeEditor = function ArtifactCodeEditor({
   const currentUpdateRef = useRef(currentUpdate);
   const editArtifactRef = useRef(editArtifact);
   const setCurrentCodeRef = useRef(setCurrentCode);
+  const failedContentRef = useRef<string | null>(null);
   const prevContentRef = useRef(artifact.content ?? '');
   const prevArtifactId = useRef(artifact.id);
   const prevReadOnly = useRef(readOnly);
@@ -103,6 +110,9 @@ export const ArtifactCodeEditor = function ArtifactCodeEditor({
     () =>
       debounce((code: string) => {
         if (readOnly || isMutatingRef.current || artifactRef.current.index == null) {
+          return;
+        }
+        if (failedContentRef.current != null && code.trim() === failedContentRef.current.trim()) {
           return;
         }
         const art = artifactRef.current;
@@ -177,6 +187,8 @@ export const ArtifactCodeEditor = function ArtifactCodeEditor({
     }
     prevArtifactId.current = artifact.id;
     prevContentRef.current = artifact.content ?? '';
+    failedContentRef.current = null;
+    setCurrentUpdate(null);
     const ed = monacoRef.current;
     if (ed && artifact.content != null) {
       ed.getModel()?.setValue(artifact.content);
