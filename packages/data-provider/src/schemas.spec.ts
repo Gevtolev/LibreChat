@@ -9,7 +9,7 @@ describe('anthropicSettings', () => {
   describe('maxOutputTokens.reset()', () => {
     const { reset } = anthropicSettings.maxOutputTokens;
 
-    describe('Claude Sonnet 4.x models (64K limit)', () => {
+    describe('Claude Sonnet 4.0-4.5 models (64K limit)', () => {
       it('should return 64K for claude-sonnet-4', () => {
         expect(reset('claude-sonnet-4')).toBe(64000);
       });
@@ -17,13 +17,21 @@ describe('anthropicSettings', () => {
       it('should return 64K for claude-sonnet-4-5', () => {
         expect(reset('claude-sonnet-4-5')).toBe(64000);
       });
-
-      it('should return 64K for claude-sonnet-4-6', () => {
-        expect(reset('claude-sonnet-4-6')).toBe(64000);
-      });
     });
 
-    describe('Claude Sonnet 5+ models (128K limit)', () => {
+    describe('Claude Sonnet 4.6+ and 5+ models (128K limit)', () => {
+      it('should return 128K for claude-sonnet-4-6', () => {
+        expect(reset('claude-sonnet-4-6')).toBe(128000);
+      });
+
+      it('should return 128K for claude-sonnet-4-6-thinking', () => {
+        expect(reset('claude-sonnet-4-6-thinking')).toBe(128000);
+      });
+
+      it('should return 128K for future versions like claude-sonnet-4-9', () => {
+        expect(reset('claude-sonnet-4-9')).toBe(128000);
+      });
+
       it('should return 128K for claude-sonnet-5', () => {
         expect(reset('claude-sonnet-5')).toBe(128000);
       });
@@ -274,7 +282,19 @@ describe('anthropicSettings', () => {
       });
     });
 
-    describe('Claude Sonnet 5+ models (128K cap)', () => {
+    describe('Claude Sonnet 4.6+ and 5+ models (128K cap)', () => {
+      it('should cap at 128K for claude-sonnet-4-6 when value exceeds', () => {
+        expect(set(150000, 'claude-sonnet-4-6')).toBe(128000);
+      });
+
+      it('should allow 100K for claude-sonnet-4-6', () => {
+        expect(set(100000, 'claude-sonnet-4-6')).toBe(100000);
+      });
+
+      it('should allow 100K for claude-sonnet-4-6-thinking', () => {
+        expect(set(100000, 'claude-sonnet-4-6-thinking')).toBe(100000);
+      });
+
       it('should allow 100K for claude-sonnet-5', () => {
         expect(set(100000, 'claude-sonnet-5')).toBe(100000);
       });

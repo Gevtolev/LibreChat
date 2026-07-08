@@ -1037,6 +1037,18 @@ describe('Meta Models Tests', () => {
         maxOutputTokensMap[EModelEndpoint.openAI]['deepseek-reasoner'],
       );
     });
+
+    test('should return 128K max output for Claude Sonnet 4.6 (incl. thinking variant)', () => {
+      expect(getModelMaxOutputTokens('claude-sonnet-4-6', EModelEndpoint.anthropic)).toBe(128000);
+      expect(getModelMaxOutputTokens('claude-sonnet-4-6-thinking', EModelEndpoint.anthropic)).toBe(
+        128000,
+      );
+    });
+
+    test('should keep 64K max output for Claude Sonnet 4.0-4.5', () => {
+      expect(getModelMaxOutputTokens('claude-sonnet-4', EModelEndpoint.anthropic)).toBe(64000);
+      expect(getModelMaxOutputTokens('claude-sonnet-4-5', EModelEndpoint.anthropic)).toBe(64000);
+    });
   });
 
   describe('processModelData with Meta models', () => {
@@ -1526,7 +1538,8 @@ describe('Claude Model Tests', () => {
     expect(getModelMaxOutputTokens('claude-sonnet-5', EModelEndpoint.anthropic)).toBe(
       maxOutputTokensMap[EModelEndpoint.anthropic]['claude-sonnet-5'],
     );
-    expect(getModelMaxOutputTokens('claude-sonnet-5', EModelEndpoint.anthropic)).toBeGreaterThan(
+    // Sonnet 4.6 was raised to the same 128K output cap as Sonnet 5.
+    expect(getModelMaxOutputTokens('claude-sonnet-5', EModelEndpoint.anthropic)).toBe(
       getModelMaxOutputTokens('claude-sonnet-4-6', EModelEndpoint.anthropic),
     );
   });
