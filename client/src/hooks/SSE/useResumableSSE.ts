@@ -41,6 +41,72 @@ type ChatHelpers = Pick<
 
 const MAX_RETRIES = 5;
 
+const STREAM_START_FALLBACK_TEXT = 'Error connecting to server, try refreshing the page.';
+
+/**
+ * Parses an SSE-framed error body (`event: error\ndata: {...}`) and returns the
+ * decoded `data` payload, or null when the body isn't an SSE error frame.
+ */
+const parseSSEErrorData = (body: string): unknown => {
+  const blocks = body.split(/\r?\n\r?\n/);
+  for (const block of blocks) {
+    const lines = block.split(/\r?\n/);
+    const event = lines
+      .find((line) => line.startsWith('event:'))
+      ?.slice('event:'.length)
+      .trim();
+    if (event !== 'error') {
+      continue;
+    }
+    const data = lines
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice('data:'.length).trimStart())
+      .join('\n')
+      .trim();
+    if (!data) {
+      return null;
+    }
+    try {
+      return JSON.parse(data);
+    } catch {
+      return data;
+    }
+  }
+  return null;
+};
+
+/** Extracts a human-readable message from a parsed error payload, if present. */
+const getSSEErrorText = (payload: unknown): string | null => {
+  if (typeof payload === 'string') {
+    return payload;
+  }
+  if (payload == null || typeof payload !== 'object') {
+    return null;
+  }
+  const record = payload as Record<string, unknown>;
+  const text = record.text ?? record.message ?? record.error;
+  return typeof text === 'string' && text.length > 0 ? text : null;
+};
+
+/**
+ * Resolves the user-facing text for a stream-start failure. Handles SSE-framed
+ * string bodies, plain error objects (`{ text | message | error }`), and falls
+ * back to a generic message so the user never sees a raw JSON blob.
+ */
+export const getStreamStartFailureText = (errorData?: unknown): string => {
+  if (typeof errorData === 'string') {
+    const sseErrorData = parseSSEErrorData(errorData);
+    if (sseErrorData != null) {
+      return getSSEErrorText(sseErrorData) ?? JSON.stringify(sseErrorData);
+    }
+    return errorData || STREAM_START_FALLBACK_TEXT;
+  }
+  if (errorData == null) {
+    return STREAM_START_FALLBACK_TEXT;
+  }
+  return getSSEErrorText(errorData) ?? JSON.stringify(errorData);
+};
+
 const hasConcreteConversationId = (conversationId?: string | null) =>
   !!conversationId &&
   conversationId !== Constants.NEW_CONVO &&
@@ -723,9 +789,17 @@ export default function useResumableSSE(
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           // Use request.post which handles auth token refresh via axios interceptors
-          const data = (await request.post(url, payload)) as { streamId: string };
-          console.log('[ResumableSSE] Generation started:', { streamId: data.streamId });
-          return data.streamId;
+          const data = (await request.post(url, payload)) as { streamId?: string } | null;
+          const streamId =
+            typeof data?.streamId === 'string' && data.streamId.length > 0 ? data.streamId : null;
+          if (streamId) {
+            console.log('[ResumableSSE] Generation started:', { streamId });
+            return streamId;
+          }
+          // A 2xx without a usable streamId is a failure, not a success; route it
+          // through the error path so the user sees why instead of a silent stall.
+          lastError = { response: { data } };
+          break;
         } catch (error) {
           lastError = error;
           // Check if it's a network error (retry) vs server error (don't retry)
@@ -750,18 +824,13 @@ export default function useResumableSSE(
 
       console.error('[ResumableSSE] Error starting generation:', lastError);
 
-      const axiosError = lastError as { response?: { data?: Record<string, unknown> } };
-      const errorData = axiosError?.response?.data;
-      if (errorData) {
-        errorHandler({
-          data: { text: JSON.stringify(errorData) } as unknown as Parameters<
-            typeof errorHandler
-          >[0]['data'],
-          submission: currentSubmission as EventSubmission,
-        });
-      } else {
-        errorHandler({ data: undefined, submission: currentSubmission as EventSubmission });
-      }
+      const errorData = (lastError as { response?: { data?: unknown } })?.response?.data;
+      errorHandler({
+        data: { text: getStreamStartFailureText(errorData) } as unknown as Parameters<
+          typeof errorHandler
+        >[0]['data'],
+        submission: currentSubmission as EventSubmission,
+      });
       setIsSubmitting(false);
       return null;
     },

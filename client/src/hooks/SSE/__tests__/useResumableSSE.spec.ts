@@ -118,7 +118,7 @@ jest.mock('librechat-data-provider', () => {
   };
 });
 
-import useResumableSSE from '~/hooks/SSE/useResumableSSE';
+import useResumableSSE, { getStreamStartFailureText } from '~/hooks/SSE/useResumableSSE';
 
 const CONV_ID = 'conv-abc-123';
 
@@ -560,5 +560,36 @@ describe('useResumableSSE', () => {
       }),
     );
     unmount();
+  });
+});
+
+describe('getStreamStartFailureText', () => {
+  it('extracts the message field from a plain error object', () => {
+    expect(getStreamStartFailureText({ message: 'Model is overloaded' })).toBe(
+      'Model is overloaded',
+    );
+  });
+
+  it('prefers text over message/error', () => {
+    expect(getStreamStartFailureText({ text: 'A', message: 'B', error: 'C' })).toBe('A');
+  });
+
+  it('parses an SSE-framed error body and returns its text', () => {
+    const body = 'event: error\ndata: {"text":"Insufficient quota"}\n\n';
+    expect(getStreamStartFailureText(body)).toBe('Insufficient quota');
+  });
+
+  it('returns a non-SSE string body verbatim', () => {
+    expect(getStreamStartFailureText('Bad Gateway')).toBe('Bad Gateway');
+  });
+
+  it('falls back to a generic message when there is no error data', () => {
+    expect(getStreamStartFailureText(undefined)).toBe(
+      'Error connecting to server, try refreshing the page.',
+    );
+  });
+
+  it('stringifies an object with no readable text field rather than dropping it', () => {
+    expect(getStreamStartFailureText({ code: 503 })).toBe('{"code":503}');
   });
 });
