@@ -239,6 +239,7 @@ export default function useResumableSSE(
     (currentStreamId: string, currentSubmission: TSubmission, isResume = false) => {
       let { userMessage } = currentSubmission;
       let textIndex: number | null = null;
+      let finalReceived = false;
 
       const baseUrl = `${apiBaseUrl()}/api/agents/chat/stream/${encodeURIComponent(currentStreamId)}`;
       const url = isResume ? `${baseUrl}?resume=true` : baseUrl;
@@ -264,6 +265,12 @@ export default function useResumableSSE(
           const data = JSON.parse(e.data);
 
           if (data.final != null) {
+            finalReceived = true;
+            if (reconnectTimeoutRef.current) {
+              clearTimeout(reconnectTimeoutRef.current);
+              reconnectTimeoutRef.current = null;
+            }
+            reconnectAttemptRef.current = 0;
             console.log('[ResumableSSE] Received FINAL event', {
               aborted: data.aborted,
               conversationId: data.conversation?.conversationId,
@@ -446,10 +453,18 @@ export default function useResumableSSE(
        * Order matters: check responseCode first since HTTP errors may also include data
        */
       sse.addEventListener('error', async (e: MessageEvent) => {
-        (startupConfig?.balance?.enabled ?? false) && balanceQuery.refetch();
-
         /* @ts-ignore - sse.js types don't expose responseCode */
         const responseCode = e.responseCode;
+
+        if (finalReceived) {
+          console.log('[ResumableSSE] Ignoring error after FINAL event', {
+            responseCode,
+            hasData: !!e.data,
+          });
+          return;
+        }
+
+        (startupConfig?.balance?.enabled ?? false) && balanceQuery.refetch();
 
         // 404 → job completed & was cleaned up; messages are persisted in DB.
         // Invalidate cache once so react-query refetches instead of showing an error.

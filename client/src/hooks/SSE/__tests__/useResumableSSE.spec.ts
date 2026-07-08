@@ -171,7 +171,7 @@ const getLastSSE = (): MockSSEInstance => {
   return sse;
 };
 
-describe('useResumableSSE - 404 error path', () => {
+describe('useResumableSSE', () => {
   beforeEach(() => {
     mockSSEInstances.length = 0;
     localStorage.clear();
