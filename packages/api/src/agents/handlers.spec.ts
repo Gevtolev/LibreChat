@@ -613,7 +613,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_5',
           name: Constants.READ_FILE,
-          args: { file_path: 'maybe-disabled-read/SKILL.md' },
+          args: { path: 'maybe-disabled-read/SKILL.md' },
         },
       ]);
 
@@ -657,7 +657,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_6',
           name: Constants.READ_FILE,
-          args: { file_path: 'manually-primed/references/foo.md' },
+          args: { path: 'manually-primed/references/foo.md' },
         },
       ]);
 
@@ -706,7 +706,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_1',
           name: Constants.READ_FILE,
-          args: { file_path: 'pii-redactor/SKILL.md' },
+          args: { path: 'pii-redactor/SKILL.md' },
         },
       ]);
 
@@ -735,7 +735,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_2',
           name: Constants.READ_FILE,
-          args: { file_path: 'normal-skill/SKILL.md' },
+          args: { path: 'normal-skill/SKILL.md' },
         },
       ]);
 
@@ -773,7 +773,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_3',
           name: Constants.READ_FILE,
-          args: { file_path: 'manual-only-skill/SKILL.md' },
+          args: { path: 'manual-only-skill/SKILL.md' },
         },
       ]);
 
@@ -809,7 +809,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_4',
           name: Constants.READ_FILE,
-          args: { file_path: 'other-disabled-skill/SKILL.md' },
+          args: { path: 'other-disabled-skill/SKILL.md' },
         },
       ]);
 
@@ -851,7 +851,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_always',
           name: Constants.READ_FILE,
-          args: { file_path: 'always-applied-legal/SKILL.md' },
+          args: { path: 'always-applied-legal/SKILL.md' },
         },
       ]);
 
@@ -887,7 +887,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_read_pin',
           name: Constants.READ_FILE,
-          args: { file_path: 'collides/SKILL.md' },
+          args: { path: 'collides/SKILL.md' },
         },
       ]);
 
@@ -1012,7 +1012,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_mnt_1',
           name: Constants.READ_FILE,
-          args: { file_path: '/mnt/data/sentinel.txt' },
+          args: { path: '/mnt/data/sentinel.txt' },
           codeSessionContext: {
             session_id: 'sess-X',
             files: [{ id: 'f1', name: 'sentinel.txt', session_id: 'sess-X' }],
@@ -1041,7 +1041,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_mnt_2',
           name: Constants.READ_FILE,
-          args: { file_path: '/mnt/data/sentinel.txt' },
+          args: { path: '/mnt/data/sentinel.txt' },
         },
       ]);
 
@@ -1063,7 +1063,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_unknown_skill',
           name: Constants.READ_FILE,
-          args: { file_path: 'not-a-skill/foo.md' },
+          args: { path: 'not-a-skill/foo.md' },
           codeSessionContext: { session_id: 'sess-Y' },
         } as unknown as ToolCallRequest,
       ]);
@@ -1129,7 +1129,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_primed_outside_catalog',
           name: Constants.READ_FILE,
-          args: { file_path: 'primed-only-skill/references/foo.md' },
+          args: { path: 'primed-only-skill/references/foo.md' },
         },
       ]);
 
@@ -1161,7 +1161,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_skills_off',
           name: Constants.READ_FILE,
-          args: { file_path: 'whatever/path.md' },
+          args: { path: 'whatever/path.md' },
         },
       ]);
 
@@ -1181,7 +1181,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_no_route',
           name: Constants.READ_FILE,
-          args: { file_path: 'whatever/path.md' },
+          args: { path: 'whatever/path.md' },
         },
       ]);
 
@@ -1210,7 +1210,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_real_skill',
           name: Constants.READ_FILE,
-          args: { file_path: 'real-skill/SKILL.md' },
+          args: { path: 'real-skill/SKILL.md' },
         },
       ]);
 
@@ -1239,7 +1239,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_trailing_slash',
           name: Constants.READ_FILE,
-          args: { file_path: 'output/' },
+          args: { path: 'output/' },
         },
       ]);
 
@@ -1261,7 +1261,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_trailing_slash_no_env',
           name: Constants.READ_FILE,
-          args: { file_path: 'output/' },
+          args: { path: 'output/' },
         },
       ]);
 
@@ -1281,7 +1281,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_no_callback',
           name: Constants.READ_FILE,
-          args: { file_path: '/mnt/data/x.txt' },
+          args: { path: '/mnt/data/x.txt' },
         },
       ]);
 
@@ -1310,7 +1310,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_huge_file',
           name: Constants.READ_FILE,
-          args: { file_path: '/mnt/data/huge.log' },
+          args: { path: '/mnt/data/huge.log' },
         },
       ]);
 
@@ -1338,7 +1338,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_small_file',
           name: Constants.READ_FILE,
-          args: { file_path: '/mnt/data/sentinel.txt' },
+          args: { path: '/mnt/data/sentinel.txt' },
         },
       ]);
 
@@ -1359,7 +1359,7 @@ describe('createToolExecuteHandler', () => {
         {
           id: 'call_null_result',
           name: Constants.READ_FILE,
-          args: { file_path: '/mnt/data/missing.txt' },
+          args: { path: '/mnt/data/missing.txt' },
         },
       ]);
 
@@ -1390,7 +1390,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_png',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/simple_graph.png' },
+            args: { path: '/mnt/data/simple_graph.png' },
             codeSessionContext: { session_id: 'sess-Z' },
           } as unknown as ToolCallRequest,
         ]);
@@ -1415,7 +1415,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_zip',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/archive.zip' },
+            args: { path: '/mnt/data/archive.zip' },
           },
         ]);
 
@@ -1439,7 +1439,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_uppercase',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/CHART.PNG' },
+            args: { path: '/mnt/data/CHART.PNG' },
           },
         ]);
 
@@ -1466,7 +1466,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_nul_sniff',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/mystery_file' },
+            args: { path: '/mnt/data/mystery_file' },
           },
         ]);
 
@@ -1490,7 +1490,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_text',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/notes.txt' },
+            args: { path: '/mnt/data/notes.txt' },
           },
         ]);
 
@@ -1514,7 +1514,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_dotted_dir',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/proj.v1/notes' },
+            args: { path: '/mnt/data/proj.v1/notes' },
           },
         ]);
 
@@ -1542,7 +1542,7 @@ describe('createToolExecuteHandler', () => {
           {
             id: 'call_svg',
             name: Constants.READ_FILE,
-            args: { file_path: '/mnt/data/icon.svg' },
+            args: { path: '/mnt/data/icon.svg' },
           },
         ]);
 

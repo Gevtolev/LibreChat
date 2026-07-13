@@ -20,10 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
@@ -103,10 +103,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
@@ -162,10 +162,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
@@ -231,10 +231,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
@@ -289,10 +289,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
@@ -327,10 +327,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
@@ -371,10 +371,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20.19
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20.19'
+          node-version: '24'
 
       - name: Restore node_modules cache
         id: cache-node-modules
