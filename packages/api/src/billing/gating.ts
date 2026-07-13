@@ -2,6 +2,7 @@ import type { Types } from 'mongoose';
 import type { PlanConfig } from 'librechat-data-provider';
 import type { ISubscriptionLean, IQuotaLean } from '@librechat/data-schemas';
 import { getActiveSubscription } from './applyPlanChange';
+import { isEnabled } from '~/utils';
 import { PLANS } from './plans';
 import { getModelTier } from './modelRegistry';
 import type { FeatureKey } from './modelRegistry';
@@ -49,6 +50,12 @@ export async function checkBillingAccess(
   args: { userId: string | Types.ObjectId; modelId: string; featureFlag?: FeatureKey },
   deps: GatingDeps,
 ): Promise<void> {
+  /** Testing-phase escape hatch — flip DISABLE_BILLING_GATING off (or unset) to
+   *  re-enable tier/quota enforcement before real launch. */
+  if (isEnabled(process.env.DISABLE_BILLING_GATING)) {
+    return;
+  }
+
   const userId =
     typeof args.userId === 'string' ? (args.userId as unknown as Types.ObjectId) : args.userId;
 
