@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { v4 } from 'uuid';
 import { Image as ImageIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -11,18 +12,34 @@ import {
   SelectTrigger,
   TextareaAutosize,
 } from '@librechat/client';
-import { QueryKeys } from 'librechat-data-provider';
+import { QueryKeys, dataService } from 'librechat-data-provider';
 import {
   useImageModels,
   useGenerateImage,
   useImageResult,
   POLL_TIMEOUT_COUNT,
 } from '~/data-provider';
+import ReferenceImagePreview from '~/components/Chat/Input/Files/Image';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 import { applyStyleToPrompt, DEFAULT_IMAGE_STYLE } from './styles';
 import ImageControls from './ImageControls';
 import ImageGallery from './ImageGallery';
+
+const readImageDimensions = (file: File): Promise<{ width: number; height: number }> =>
+  new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: 0, height: 0 });
+    };
+    img.src = url;
+  });
 
 export default function ImageWorkspace() {
   const localize = useLocalize();
@@ -128,6 +145,40 @@ export default function ImageWorkspace() {
   const aspectRatios = config?.aspectRatios ?? ['1:1'];
   const selectedModel = models.find((m) => m.id === (model || defaultModel));
 
+  const uploadReferenceImage = useCallback(async (file: File) => {
+    setIsUploading(true);
+    try {
+      const { width, height } = await readImageDimensions(file);
+      const formData = new FormData();
+      formData.append('endpoint', 'openAI');
+      formData.append('file', file, encodeURIComponent(file.name));
+      formData.append('file_id', v4());
+      formData.append('width', String(width));
+      formData.append('height', String(height));
+
+      const uploaded = await dataService.uploadImage(formData);
+      setImageUrls(uploaded.filepath ? [uploaded.filepath] : []);
+    } catch {
+      setImageUrls([]);
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!selectedModel?.supportsEdit) {
+        return;
+      }
+      const file = e.clipboardData?.files?.[0];
+      if (!file) {
+        return;
+      }
+      uploadReferenceImage(file);
+    },
+    [selectedModel, uploadReferenceImage],
+  );
+
   return (
     <div className="flex h-full flex-col items-center overflow-y-auto px-4 pb-12">
       {/* Model selector — centered at top */}
@@ -165,6 +216,16 @@ export default function ImageWorkspace() {
             isFocused ? 'shadow-lg' : 'shadow-md',
           )}
         >
+          {imageUrls.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              <ReferenceImagePreview
+                url={imageUrls[0]}
+                progress={isUploading ? 0 : 1}
+                onDelete={() => setImageUrls([])}
+              />
+            </div>
+          )}
+
           <div className="flex items-start gap-2">
             <ImageIcon
               className="mt-2.5 h-5 w-5 flex-shrink-0 text-text-tertiary"
@@ -173,6 +234,7 @@ export default function ImageWorkspace() {
             <TextareaAutosize
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onPaste={handlePaste}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={localize('com_ui_image_prompt_placeholder')}
@@ -186,17 +248,11 @@ export default function ImageWorkspace() {
           <div className="mt-2 flex items-center justify-between gap-2">
             {models.length > 0 ? (
               <ImageControls
-                selectedModel={selectedModel}
                 style={style}
                 aspectRatio={aspectRatio}
                 aspectRatios={aspectRatios}
-                imageUrls={imageUrls}
                 onStyleChange={setStyle}
                 onAspectRatioChange={setAspectRatio}
-                onImageUrlsChange={setImageUrls}
-                onUploadStart={() => setIsUploading(true)}
-                onUploadEnd={() => setIsUploading(false)}
-                isUploading={isUploading}
               />
             ) : (
               <span />
