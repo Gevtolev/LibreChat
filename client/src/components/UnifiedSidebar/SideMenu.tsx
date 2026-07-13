@@ -164,12 +164,12 @@ function SideMenu({ onCollapse }: { onCollapse?: () => void }) {
         <NavRow
           icon={LayoutGrid}
           label={localize('com_ui_apps')}
-          onClick={() => navigate('/agents')}
+          onClick={() => navigate('/apps')}
         />
         <NavRow
           icon={Telescope}
           label={localize('com_ui_deep_research')}
-          onClick={() => navigate('/c/new')}
+          onClick={() => navigate('/deep-research')}
         />
       </div>
 
