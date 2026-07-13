@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
 import { v4 } from 'uuid';
-import { Check } from 'lucide-react';
 import { dataService } from 'librechat-data-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@librechat/client';
 import type { TImageModel } from 'librechat-data-provider';
+import ReferenceImagePreview from '~/components/Chat/Input/Files/Image';
 import { useLocalize } from '~/hooks';
 import { IMAGE_STYLES } from './styles';
 
@@ -119,18 +119,25 @@ export default function ImageControls({
 
       {selectedModel?.supportsEdit && (
         <>
-          <button
-            type="button"
-            className="flex h-8 items-center gap-1 rounded-lg border border-border-light bg-transparent px-2.5 text-xs text-text-secondary hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            aria-label={localize('com_ui_reference_image')}
-          >
-            {isUploading ? localize('com_ui_image_generating') : localize('com_ui_reference_image')}
-            {imageUrls.length > 0 && (
-              <Check className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />
-            )}
-          </button>
+          {imageUrls.length > 0 ? (
+            <ReferenceImagePreview
+              url={imageUrls[0]}
+              progress={1}
+              onDelete={() => onImageUrlsChange([])}
+            />
+          ) : (
+            <button
+              type="button"
+              className="flex h-8 items-center gap-1 rounded-lg border border-border-light bg-transparent px-2.5 text-xs text-text-secondary hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              aria-label={localize('com_ui_reference_image')}
+            >
+              {isUploading
+                ? localize('com_ui_image_generating')
+                : localize('com_ui_reference_image')}
+            </button>
+          )}
           <input
             ref={fileInputRef}
             type="file"
