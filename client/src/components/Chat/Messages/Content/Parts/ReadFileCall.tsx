@@ -77,7 +77,7 @@ export default function ReadFileCall({
   hideAttachments?: boolean;
 }) {
   const localize = useLocalize();
-  const filePath = useMemo(() => parseJsonField(args, 'file_path'), [args]);
+  const filePath = useMemo(() => parseJsonField(args, 'path'), [args]);
   const fileName = filePath.split('/').pop() || filePath;
   const lang = useMemo(() => langFromPath(filePath), [filePath]);
 

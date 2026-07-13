@@ -107,13 +107,13 @@ Use for text, CSV, JSON, Markdown, logs, and small source files at paths returne
 const CODE_READ_FILE_PARAMETERS: LCTool['parameters'] = Object.freeze({
   type: 'object',
   properties: {
-    file_path: {
+    path: {
       type: 'string',
       description:
         'Path to a file from code execution output, such as "/mnt/data/result.csv" or another path returned by the execution tool.',
     },
   },
-  required: ['file_path'],
+  required: ['path'],
 }) as LCTool['parameters'];
 
 const CODE_READ_FILE_DEF: LCTool = Object.freeze({

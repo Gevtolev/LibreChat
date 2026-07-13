@@ -612,13 +612,13 @@ async function handleReadFileCall(
 ): Promise<ToolExecuteResult> {
   const { getSkillByName, getSkillFileByPath, getStrategyFunctions, updateSkillFileContent } =
     options;
-  const args = tc.args as { file_path?: string };
-  if (!args.file_path) {
+  const args = tc.args as { path?: string };
+  if (!args.path) {
     return {
       toolCallId: tc.id,
       status: 'error',
       content: '',
-      errorMessage: 'file_path is required',
+      errorMessage: 'path is required',
     };
   }
 
@@ -638,33 +638,33 @@ async function handleReadFileCall(
    * reference (skill paths are relative `{skillName}/...`), and consulting
    * `getSkillByName` would just burn a DB round-trip on a guaranteed miss.
    */
-  if (args.file_path.startsWith('/mnt/data/')) {
+  if (args.path.startsWith('/mnt/data/')) {
     if (codeEnvAvailable) {
-      return handleSandboxFileFallback(tc, args.file_path, options, req);
+      return handleSandboxFileFallback(tc, args.path, options, req);
     }
     return {
       toolCallId: tc.id,
       status: 'error',
       content: '',
-      errorMessage: `Path "${args.file_path}" is a code-execution sandbox path, but this agent does not have code execution enabled.`,
+      errorMessage: `Path "${args.path}" is a code-execution sandbox path, but this agent does not have code execution enabled.`,
     };
   }
 
-  const slashIdx = args.file_path.indexOf('/');
+  const slashIdx = args.path.indexOf('/');
   if (slashIdx < 1) {
     if (codeEnvAvailable) {
-      return handleSandboxFileFallback(tc, args.file_path, options, req);
+      return handleSandboxFileFallback(tc, args.path, options, req);
     }
     return {
       toolCallId: tc.id,
       status: 'error',
       content: '',
-      errorMessage: `Invalid file path "${args.file_path}". Use format: {skillName}/{path}`,
+      errorMessage: `Invalid file path "${args.path}". Use format: {skillName}/{path}`,
     };
   }
 
-  const skillName = args.file_path.slice(0, slashIdx);
-  const relativePath = args.file_path.slice(slashIdx + 1);
+  const skillName = args.path.slice(0, slashIdx);
+  const relativePath = args.path.slice(slashIdx + 1);
   if (!relativePath) {
     /**
      * `read_file("output/")`: a malformed-but-unambiguously-not-a-skill
@@ -673,7 +673,7 @@ async function handleReadFileCall(
      * dead-ending with a skill-centric error message.
      */
     if (codeEnvAvailable) {
-      return handleSandboxFileFallback(tc, args.file_path, options, req);
+      return handleSandboxFileFallback(tc, args.path, options, req);
     }
     return {
       toolCallId: tc.id,
@@ -692,7 +692,7 @@ async function handleReadFileCall(
    */
   if (!skillsEffectivelyEnabled) {
     if (codeEnvAvailable) {
-      return handleSandboxFileFallback(tc, args.file_path, options, req);
+      return handleSandboxFileFallback(tc, args.path, options, req);
     }
     return {
       toolCallId: tc.id,
@@ -734,7 +734,7 @@ async function handleReadFileCall(
   const activeSkillNames = mergedConfigurable?.activeSkillNames as Set<string> | undefined;
   if (activeSkillNames && !activeSkillNames.has(skillName) && !isPrimedThisTurn) {
     if (codeEnvAvailable) {
-      return handleSandboxFileFallback(tc, args.file_path, options, req);
+      return handleSandboxFileFallback(tc, args.path, options, req);
     }
     return {
       toolCallId: tc.id,
@@ -814,7 +814,7 @@ async function handleReadFileCall(
     return {
       toolCallId: tc.id,
       status: 'success',
-      content: `File: ${args.file_path}\n\n${addLineNumbers(skill.body)}`,
+      content: `File: ${args.path}\n\n${addLineNumbers(skill.body)}`,
     };
   }
 
@@ -845,7 +845,7 @@ async function handleReadFileCall(
       return {
         toolCallId: tc.id,
         status: 'success',
-        content: `Binary file (${file.mimeType}, ${file.bytes} bytes). Use bash to process: /mnt/data/${args.file_path}`,
+        content: `Binary file (${file.mimeType}, ${file.bytes} bytes). Use bash to process: /mnt/data/${args.path}`,
       };
     }
   }
@@ -855,7 +855,7 @@ async function handleReadFileCall(
     return {
       toolCallId: tc.id,
       status: 'success',
-      content: `File: ${args.file_path} (${file.bytes} bytes)\n\n${addLineNumbers(file.content)}`,
+      content: `File: ${args.path} (${file.bytes} bytes)\n\n${addLineNumbers(file.content)}`,
     };
   }
 
@@ -865,14 +865,14 @@ async function handleReadFileCall(
     return {
       toolCallId: tc.id,
       status: 'success',
-      content: `File "${args.file_path}" is too large to read directly (${file.bytes} bytes, limit: ${MAX_READABLE_BYTES}). Invoke the skill first, then use bash to read it at /mnt/data/${args.file_path}.`,
+      content: `File "${args.path}" is too large to read directly (${file.bytes} bytes, limit: ${MAX_READABLE_BYTES}). Invoke the skill first, then use bash to read it at /mnt/data/${args.path}.`,
     };
   }
   if (isImage && file.bytes > MAX_BINARY_BYTES) {
     return {
       toolCallId: tc.id,
       status: 'success',
-      content: `File too large (${file.bytes} bytes, limit: ${MAX_BINARY_BYTES}). Use bash to process: /mnt/data/${args.file_path}`,
+      content: `File too large (${file.bytes} bytes, limit: ${MAX_BINARY_BYTES}). Use bash to process: /mnt/data/${args.path}`,
     };
   }
 
@@ -916,7 +916,7 @@ async function handleReadFileCall(
         return {
           toolCallId: tc.id,
           status: 'success',
-          content: `File "${args.file_path}" exceeded streaming limit (${streamLimit} bytes). Invoke the skill first, then use bash to read it at /mnt/data/${args.file_path}.`,
+          content: `File "${args.path}" exceeded streaming limit (${streamLimit} bytes). Invoke the skill first, then use bash to read it at /mnt/data/${args.path}.`,
         };
       }
       chunks.push(chunk);
@@ -954,7 +954,7 @@ async function handleReadFileCall(
         return {
           toolCallId: tc.id,
           status: 'success',
-          content: `Image: ${args.file_path} (${buffer.length} bytes, ${file.mimeType})`,
+          content: `Image: ${args.path} (${buffer.length} bytes, ${file.mimeType})`,
           artifact: {
             content: [
               { type: 'image_url', image_url: { url: `data:${file.mimeType};base64,${base64}` } },
@@ -970,7 +970,7 @@ async function handleReadFileCall(
       return {
         toolCallId: tc.id,
         status: 'success',
-        content: `Binary file (${file.mimeType}, ${buffer.length} bytes). Use bash to process: /mnt/data/${args.file_path}`,
+        content: `Binary file (${file.mimeType}, ${buffer.length} bytes). Use bash to process: /mnt/data/${args.path}`,
       };
     }
 
@@ -992,14 +992,14 @@ async function handleReadFileCall(
       return {
         toolCallId: tc.id,
         status: 'success',
-        content: `File too large (${buffer.length} bytes, limit: ${MAX_READABLE_BYTES}). Use bash: cat /mnt/data/${args.file_path}`,
+        content: `File too large (${buffer.length} bytes, limit: ${MAX_READABLE_BYTES}). Use bash: cat /mnt/data/${args.path}`,
       };
     }
 
     return {
       toolCallId: tc.id,
       status: 'success',
-      content: `File: ${args.file_path} (${buffer.length} bytes)\n\n${addLineNumbers(text)}`,
+      content: `File: ${args.path} (${buffer.length} bytes)\n\n${addLineNumbers(text)}`,
     };
   } catch (error) {
     return {
