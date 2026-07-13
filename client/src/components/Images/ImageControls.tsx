@@ -1,9 +1,4 @@
-import React, { useRef } from 'react';
-import { v4 } from 'uuid';
-import { dataService } from 'librechat-data-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@librechat/client';
-import type { TImageModel } from 'librechat-data-provider';
-import ReferenceImagePreview from '~/components/Chat/Input/Files/Image';
 import { useLocalize } from '~/hooks';
 import { IMAGE_STYLES } from './styles';
 
@@ -12,78 +7,22 @@ const PILL_TRIGGER_CLASS =
 
 const DROPDOWN_CONTENT_CLASS = 'bg-surface-secondary text-text-primary';
 
-const readImageDimensions = (file: File): Promise<{ width: number; height: number }> =>
-  new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: 0, height: 0 });
-    };
-    img.src = url;
-  });
-
 interface ImageControlsProps {
-  selectedModel: TImageModel | undefined;
   style: string;
   aspectRatio: string;
   aspectRatios: string[];
-  imageUrls: string[];
   onStyleChange: (value: string) => void;
   onAspectRatioChange: (value: string) => void;
-  onImageUrlsChange: (urls: string[]) => void;
-  onUploadStart: () => void;
-  onUploadEnd: () => void;
-  isUploading: boolean;
 }
 
 export default function ImageControls({
-  selectedModel,
   style,
   aspectRatio,
   aspectRatios,
-  imageUrls,
   onStyleChange,
   onAspectRatioChange,
-  onImageUrlsChange,
-  onUploadStart,
-  onUploadEnd,
-  isUploading,
 }: ImageControlsProps) {
   const localize = useLocalize();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    onUploadStart();
-    try {
-      const { width, height } = await readImageDimensions(file);
-      const formData = new FormData();
-      formData.append('endpoint', 'openAI');
-      formData.append('file', file, encodeURIComponent(file.name));
-      formData.append('file_id', v4());
-      formData.append('width', String(width));
-      formData.append('height', String(height));
-
-      const uploaded = await dataService.uploadImage(formData);
-      onImageUrlsChange(uploaded.filepath ? [uploaded.filepath] : []);
-    } catch {
-      onImageUrlsChange([]);
-    } finally {
-      onUploadEnd();
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   return (
     <div
@@ -116,38 +55,6 @@ export default function ImageControls({
           ))}
         </SelectContent>
       </Select>
-
-      {selectedModel?.supportsEdit && (
-        <>
-          {imageUrls.length > 0 ? (
-            <ReferenceImagePreview
-              url={imageUrls[0]}
-              progress={1}
-              onDelete={() => onImageUrlsChange([])}
-            />
-          ) : (
-            <button
-              type="button"
-              className="flex h-8 items-center gap-1 rounded-lg border border-border-light bg-transparent px-2.5 text-xs text-text-secondary hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              aria-label={localize('com_ui_reference_image')}
-            >
-              {isUploading
-                ? localize('com_ui_image_generating')
-                : localize('com_ui_reference_image')}
-            </button>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-            aria-hidden="true"
-          />
-        </>
-      )}
     </div>
   );
 }

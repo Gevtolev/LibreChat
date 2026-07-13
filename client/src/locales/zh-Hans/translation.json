@@ -1192,7 +1192,6 @@
   "com_ui_quality": "质量",
   "com_ui_read_aloud": "大声朗读",
   "com_ui_redirecting_to_provider": "正在重定向到 {{0}}，请稍候...",
-  "com_ui_reference_image": "参考图",
   "com_ui_reference_saved_memories": "参考保存的记忆",
   "com_ui_reference_saved_memories_description": "允许助手在回复时参考并使用您保存的记忆",
   "com_ui_refresh": "刷新",
