@@ -789,6 +789,7 @@
   "com_ui_collapse": "折叠",
   "com_ui_collapse_chat": "收起对话",
   "com_ui_collapse_thoughts": "折叠思考内容",
+  "com_ui_coming_soon": "正在开发中，敬请期待。",
   "com_ui_command_placeholder": "可选：输入提示词的命令，否则将使用名称",
   "com_ui_command_usage_placeholder": "通过命令或名称选择提示词",
   "com_ui_complete_setup": "完成设置",

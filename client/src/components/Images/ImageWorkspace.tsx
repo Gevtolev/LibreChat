@@ -231,7 +231,7 @@ export default function ImageWorkspace() {
       </div>
 
       {/* Gallery */}
-      <div className="mt-12 w-full max-w-2xl">
+      <div className="mt-12 w-full md:max-w-3xl xl:max-w-4xl">
         <ImageGallery />
       </div>
     </div>

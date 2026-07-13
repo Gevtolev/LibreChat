@@ -191,8 +191,12 @@ function ExpandedPanel({
       <NewChatButton setActive={setActive} />
       <QuickNavButton icon={Search} label={localize('com_ui_search')} href="/search" />
       <QuickNavButton icon={Image} label={localize('com_ui_images')} href="/images" />
-      <QuickNavButton icon={LayoutGrid} label={localize('com_ui_apps')} href="/agents" />
-      <QuickNavButton icon={Telescope} label={localize('com_ui_deep_research')} href="/c/new" />
+      <QuickNavButton icon={LayoutGrid} label={localize('com_ui_apps')} href="/apps" />
+      <QuickNavButton
+        icon={Telescope}
+        label={localize('com_ui_deep_research')}
+        href="/deep-research"
+      />
       <div className="mx-2 border-b border-border-light" />
       <div className="flex flex-col gap-1 overflow-y-auto">
         {links.map((link) => (
