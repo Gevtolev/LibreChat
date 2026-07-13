@@ -136,7 +136,7 @@ export default function BookmarksView() {
             </div>
           </div>
 
-          <label className="relative min-w-0 flex-1">
+          <label className="relative min-w-0">
             <span className="sr-only">{localize('com_ui_bookmarks_filter')}</span>
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"

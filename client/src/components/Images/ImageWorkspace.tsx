@@ -152,7 +152,7 @@ export default function ImageWorkspace() {
       )}
 
       {/* Hero + composer */}
-      <div className="flex w-full max-w-2xl flex-col gap-8 pt-16 md:pt-24">
+      <div className="flex w-full flex-col gap-8 pt-16 md:max-w-3xl md:pt-24 xl:max-w-4xl">
         <h1 className="sr-only">{localize('com_ui_images')}</h1>
         <p className="text-center text-2xl font-semibold text-text-primary">
           {localize('com_ui_image_workspace_subtitle')}
