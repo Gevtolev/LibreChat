@@ -114,6 +114,36 @@ describe('checkBillingAccess — model tier gating', () => {
   });
 });
 
+describe('checkBillingAccess — DISABLE_BILLING_GATING escape hatch', () => {
+  const ORIGINAL_ENV = process.env.DISABLE_BILLING_GATING;
+
+  afterEach(() => {
+    process.env.DISABLE_BILLING_GATING = ORIGINAL_ENV;
+  });
+
+  test('free user + expensive model passes when the flag is enabled, quota untouched', async () => {
+    process.env.DISABLE_BILLING_GATING = 'true';
+    const userId = new mongoose.Types.ObjectId();
+    const deps = buildGatingDeps();
+
+    await expect(checkBillingAccess({ userId, modelId: 'gpt-5.5' }, deps)).resolves.toBeUndefined();
+
+    const quotaRecord = await mongoose.models.Quota.findOne({ user_id: userId }).lean();
+    expect(quotaRecord).toBeNull();
+  });
+
+  test('gating re-enabled once the flag is turned back off', async () => {
+    expect.assertions(2);
+    process.env.DISABLE_BILLING_GATING = 'false';
+    const userId = new mongoose.Types.ObjectId();
+
+    await expectDenied(
+      checkBillingAccess({ userId, modelId: 'gpt-5.5' }, buildGatingDeps()),
+      'upgrade_required_model',
+    );
+  });
+});
+
 describe('checkBillingAccess — feature gating', () => {
   test('featureFlag set + free plan + cheap model → throws feature_not_available', async () => {
     expect.assertions(2);
