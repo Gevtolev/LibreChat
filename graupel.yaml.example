@@ -26,6 +26,7 @@ memory:
   disabled: false
   personalize: true
   messageWindowSize: 5
+  validKeys: ["preferences", "personal_info", "work_info", "skills", "interests", "context"]
   agent:
     enabled: true
     provider: "openAI"               # routed to gptsapi via OPENAI_REVERSE_PROXY
@@ -34,6 +35,9 @@ memory:
       Extract durable facts about the user worth remembering across chats:
       stated preferences (response format, tone, length), working context
       (languages, frameworks, projects, role), and stable personal facts.
+      Only store facts the user stated about themselves. Never store the AI
+      assistant's own replies, self-description, or disclaimers (e.g. "I am
+      an AI/language model...") as if they were facts about the user.
       Do NOT store secrets, passwords, API keys, health, or financial details.
       Update/replace existing keys rather than duplicating.
 
