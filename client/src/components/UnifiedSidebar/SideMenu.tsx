@@ -6,6 +6,7 @@ import {
   X,
   Sun,
   Moon,
+  Brain,
   Image,
   Folder,
   Search,
@@ -160,6 +161,11 @@ function SideMenu({ onCollapse }: { onCollapse?: () => void }) {
           icon={Image}
           label={localize('com_ui_images')}
           onClick={() => navigate('/images')}
+        />
+        <NavRow
+          icon={Brain}
+          label={localize('com_ui_memories')}
+          onClick={() => navigate('/memories')}
         />
         <NavRow
           icon={LayoutGrid}

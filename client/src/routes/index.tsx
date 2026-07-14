@@ -42,6 +42,9 @@ const loadSkillsView = () =>
 const loadImagesView = () =>
   import('~/components/Images/layouts/ImagesView').then((m) => ({ Component: m.default }));
 
+const loadMemoriesView = () =>
+  import('~/components/Memories/layouts/MemoriesView').then((m) => ({ Component: m.default }));
+
 const loadProjectsView = () =>
   import('~/components/Projects').then((m) => ({
     Component: m.ProjectsView,
@@ -208,6 +211,10 @@ export const router = createBrowserRouter(
             {
               path: 'images',
               lazy: loadImagesView,
+            },
+            {
+              path: 'memories',
+              lazy: loadMemoriesView,
             },
             {
               path: 'apps',
