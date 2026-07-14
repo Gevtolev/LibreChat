@@ -30,7 +30,7 @@ memory:
   agent:
     enabled: true
     provider: "openAI"               # routed to gptsapi via OPENAI_REVERSE_PROXY
-    model: "gemini-2.5-flash-lite"
+    model: "gpt-4o-mini"             # upstream's documented example model for the memory agent
     instructions: >
       Extract durable facts about the user worth remembering across chats:
       stated preferences (response format, tone, length), working context
