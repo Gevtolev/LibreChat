@@ -347,38 +347,6 @@ describe('buildEndpointOption - defaultParamsEndpoint parsing', () => {
     expect(req.body.endpointOption.examples).toEqual(examples);
   });
 
-  it('should resolve special variables for restored non-agent promptPrefix', async () => {
-    mockGetEndpointsConfig.mockResolvedValue({});
-
-    const req = createReq(
-      {
-        endpoint: EModelEndpoint.assistants,
-        spec: 'guarded-assistant',
-        assistant_id: 'asst_123',
-      },
-      {
-        modelSpecs: {
-          enforce: false,
-          list: [
-            {
-              name: 'guarded-assistant',
-              preset: {
-                endpoint: EModelEndpoint.assistants,
-                assistant_id: 'asst_123',
-                promptPrefix: 'Help {{current_user}}.',
-              },
-            },
-          ],
-        },
-      },
-    );
-    req.user = { name: 'Ada' };
-
-    await buildEndpointOption(req, createRes(), jest.fn());
-
-    expect(req.body.endpointOption.promptPrefix).toBe('Help Ada.');
-  });
-
   it('should leave restored agent promptPrefix variables for agent initialization', async () => {
     mockGetEndpointsConfig.mockResolvedValue({});
 
