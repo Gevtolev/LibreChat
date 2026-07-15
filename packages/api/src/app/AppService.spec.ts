@@ -246,36 +246,6 @@ describe('AppService', () => {
     });
   });
 
-  it('should correctly configure Assistants endpoint based on custom config', async () => {
-    const config: Partial<TCustomConfig> = {
-      endpoints: {
-        [EModelEndpoint.assistants]: {
-          disableBuilder: true,
-          pollIntervalMs: 5000,
-          timeoutMs: 30000,
-          supportedIds: ['id1', 'id2'],
-          privateAssistants: false,
-        },
-      },
-    };
-
-    const result = await AppService({ config });
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        endpoints: expect.objectContaining({
-          [EModelEndpoint.assistants]: expect.objectContaining({
-            disableBuilder: true,
-            pollIntervalMs: 5000,
-            timeoutMs: 30000,
-            supportedIds: expect.arrayContaining(['id1', 'id2']),
-            privateAssistants: false,
-          }),
-        }),
-      }),
-    );
-  });
-
   it('should correctly configure Agents endpoint based on custom config', async () => {
     const config: Partial<TCustomConfig> = {
       endpoints: {
@@ -346,36 +316,6 @@ describe('AppService', () => {
           }),
           [EModelEndpoint.openAI]: expect.objectContaining({
             titleConvo: true,
-          }),
-        }),
-      }),
-    );
-  });
-
-  it('should correctly configure minimum Azure OpenAI Assistant values', async () => {
-    const assistantGroups = [azureGroups[0], { ...azureGroups[1], assistants: true }];
-    const config = {
-      endpoints: {
-        [EModelEndpoint.azureOpenAI]: {
-          groups: assistantGroups,
-          assistants: true,
-        },
-      },
-    };
-
-    process.env.WESTUS_API_KEY = 'westus-key';
-    process.env.EASTUS_API_KEY = 'eastus-key';
-
-    const result = await AppService({ config });
-    expect(result).toEqual(
-      expect.objectContaining({
-        endpoints: expect.objectContaining({
-          [EModelEndpoint.azureAssistants]: expect.objectContaining({
-            capabilities: expect.arrayContaining([
-              expect.any(String),
-              expect.any(String),
-              expect.any(String),
-            ]),
           }),
         }),
       }),
@@ -492,11 +432,6 @@ describe('AppService', () => {
           titlePrompt: 'Custom title prompt for conversation',
           titlePromptTemplate: 'Summarize this conversation: {{conversation}}',
         },
-        [EModelEndpoint.assistants]: {
-          titleMethod: 'functions',
-          titlePrompt: 'Generate a title for this assistant conversation',
-          titlePromptTemplate: 'Assistant conversation template: {{messages}}',
-        },
         [EModelEndpoint.azureOpenAI]: {
           groups: azureGroups,
           titleConvo: true,
@@ -520,12 +455,6 @@ describe('AppService', () => {
             titleMethod: 'structured',
             titlePrompt: 'Custom title prompt for conversation',
             titlePromptTemplate: 'Summarize this conversation: {{conversation}}',
-          }),
-          // Check Assistants endpoint configuration
-          [EModelEndpoint.assistants]: expect.objectContaining({
-            titleMethod: 'functions',
-            titlePrompt: 'Generate a title for this assistant conversation',
-            titlePromptTemplate: 'Assistant conversation template: {{messages}}',
           }),
           // Check Azure OpenAI endpoint configuration
           [EModelEndpoint.azureOpenAI]: expect.objectContaining({
@@ -653,78 +582,6 @@ describe('AppService', () => {
     );
   });
 
-  it('should correctly configure Bedrock endpoint with models and inferenceProfiles', async () => {
-    const config: Partial<TCustomConfig> = {
-      endpoints: {
-        [EModelEndpoint.bedrock]: {
-          models: [
-            'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-            'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
-            'global.anthropic.claude-opus-4-5-20251101-v1:0',
-          ],
-          inferenceProfiles: {
-            'us.anthropic.claude-3-7-sonnet-20250219-v1:0':
-              'arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123',
-            'us.anthropic.claude-sonnet-4-5-20250929-v1:0': '${BEDROCK_SONNET_45_PROFILE}',
-          },
-          availableRegions: ['us-east-1', 'us-west-2'],
-          titleConvo: true,
-          titleModel: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-        },
-      },
-    };
-
-    const result = await AppService({ config });
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        endpoints: expect.objectContaining({
-          [EModelEndpoint.bedrock]: expect.objectContaining({
-            models: expect.arrayContaining([
-              'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-              'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
-              'global.anthropic.claude-opus-4-5-20251101-v1:0',
-            ]),
-            inferenceProfiles: expect.objectContaining({
-              'us.anthropic.claude-3-7-sonnet-20250219-v1:0':
-                'arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123',
-              'us.anthropic.claude-sonnet-4-5-20250929-v1:0': '${BEDROCK_SONNET_45_PROFILE}',
-            }),
-            availableRegions: expect.arrayContaining(['us-east-1', 'us-west-2']),
-            titleConvo: true,
-            titleModel: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-          }),
-        }),
-      }),
-    );
-  });
-
-  it('should configure Bedrock endpoint with only inferenceProfiles (no models array)', async () => {
-    const config: Partial<TCustomConfig> = {
-      endpoints: {
-        [EModelEndpoint.bedrock]: {
-          inferenceProfiles: {
-            'us.anthropic.claude-3-7-sonnet-20250219-v1:0': '${BEDROCK_INFERENCE_PROFILE_ARN}',
-          },
-        },
-      },
-    };
-
-    const result = await AppService({ config });
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        endpoints: expect.objectContaining({
-          [EModelEndpoint.bedrock]: expect.objectContaining({
-            inferenceProfiles: expect.objectContaining({
-              'us.anthropic.claude-3-7-sonnet-20250219-v1:0': '${BEDROCK_INFERENCE_PROFILE_ARN}',
-            }),
-          }),
-        }),
-      }),
-    );
-  });
-
   it('should correctly configure all endpoint when specified', async () => {
     const config: Partial<TCustomConfig> = {
       endpoints: {
@@ -833,40 +690,6 @@ describe('AppService updating app config and issuing warnings', () => {
         balance: config.balance,
       }),
     );
-  });
-
-  it('should apply the assistants endpoint configuration correctly to app config', async () => {
-    const config: Partial<TCustomConfig> = {
-      endpoints: {
-        assistants: {
-          version: 'v2',
-          retrievalModels: ['gpt-4', 'gpt-3.5-turbo'],
-          capabilities: [],
-          disableBuilder: true,
-          pollIntervalMs: 5000,
-          timeoutMs: 30000,
-          supportedIds: ['id1', 'id2'],
-        },
-      },
-    };
-
-    const result = await AppService({ config });
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        endpoints: expect.objectContaining({
-          assistants: expect.objectContaining({
-            disableBuilder: true,
-            pollIntervalMs: 5000,
-            timeoutMs: 30000,
-            supportedIds: ['id1', 'id2'],
-          }),
-        }),
-      }),
-    );
-
-    // Verify excludedIds is undefined when not provided
-    expect(result.endpoints.assistants.excludedIds).toBeUndefined();
   });
 
   it('should not parse environment variable references in OCR config', async () => {

@@ -861,13 +861,24 @@ describe('getLLMConfig', () => {
       });
 
       it('should default future Claude 4.x Sonnet/Haiku models to 64K (future-proofing)', () => {
-        const testCases = ['claude-sonnet-4-20250514', 'claude-sonnet-4-9', 'claude-haiku-4-8'];
+        const testCases = ['claude-sonnet-4-20250514', 'claude-haiku-4-8'];
 
         testCases.forEach((model) => {
           const result = getLLMConfig('test-key', {
             modelOptions: { model },
           });
           expect(result.llmConfig.maxTokens).toBe(64000);
+        });
+      });
+
+      it('should default Claude Sonnet 4.6+ models to 128K (raised output cap)', () => {
+        const testCases = ['claude-sonnet-4-9', 'claude-sonnet-4-6', 'claude-sonnet-4.6'];
+
+        testCases.forEach((model) => {
+          const result = getLLMConfig('test-key', {
+            modelOptions: { model },
+          });
+          expect(result.llmConfig.maxTokens).toBe(128000);
         });
       });
 
@@ -1019,7 +1030,7 @@ describe('getLLMConfig', () => {
 
         expect((result.llmConfig.thinking as unknown as { type: string }).type).toBe('adaptive');
         expect(result.llmConfig.thinking).not.toHaveProperty('budget_tokens');
-        expect(result.llmConfig.maxTokens).toBe(64000);
+        expect(result.llmConfig.maxTokens).toBe(128000);
       });
 
       it('should set effort via output_config for Sonnet 4.6', () => {

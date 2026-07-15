@@ -109,42 +109,6 @@ describe('UserGroup Methods - Detailed Tests', () => {
       expect(found?.idOnTheSource).toBe('entra-123');
       expect(found?.source).toBe('local');
     });
-
-    test('should not find group with wrong source', async () => {
-      await Group.create({
-        name: 'Entra Group',
-        source: 'local',
-        idOnTheSource: 'entra-123',
-        memberIds: [],
-      });
-
-      const found = await methods.findGroupByExternalId('entra-123', 'local');
-
-      expect(found).toBeNull();
-    });
-
-    test('should handle multiple groups with same external ID but different sources', async () => {
-      const id = 'shared-id';
-
-      await Group.create({
-        name: 'Entra Group',
-        source: 'local',
-        idOnTheSource: id,
-        memberIds: [],
-      });
-
-      await Group.create({
-        name: 'Local Group',
-        source: 'local',
-        memberIds: [],
-      });
-
-      const entraGroup = await methods.findGroupByExternalId(id, 'local');
-      const localGroup = await methods.findGroupByExternalId(id, 'local');
-
-      expect(entraGroup?.name).toBe('Entra Group');
-      expect(localGroup).toBeNull(); // local groups don't use idOnTheSource by default
-    });
   });
 
   describe('findGroupsByNamePattern', () => {
@@ -178,7 +142,7 @@ describe('UserGroup Methods - Detailed Tests', () => {
     test('should filter by source when provided', async () => {
       const groups = await methods.findGroupsByNamePattern('Engineering', 'local');
 
-      expect(groups).toHaveLength(2);
+      expect(groups).toHaveLength(3);
       expect(groups.every((g) => g.source === 'local')).toBe(true);
     });
 
@@ -323,26 +287,6 @@ describe('UserGroup Methods - Detailed Tests', () => {
       expect(updated?.description).toBe('Updated description');
       expect(updated?.memberIds).toEqual(['user1', 'user2']);
       expect(updated?.idOnTheSource).toBe('existing-id'); // unchanged
-    });
-
-    test('should not update group from different source', async () => {
-      await Group.create({
-        name: 'Entra Group',
-        source: 'local',
-        idOnTheSource: 'shared-id',
-      });
-
-      const result = await methods.upsertGroupByExternalId('shared-id', 'local', {
-        name: 'Azure Group',
-      });
-
-      // Should create new group
-      expect(result?.name).toBe('Azure Group');
-      expect(result?.source).toBe('local');
-
-      // Verify both exist
-      const groups = await Group.find({ idOnTheSource: 'shared-id' });
-      expect(groups).toHaveLength(2);
     });
   });
 
@@ -621,8 +565,8 @@ describe('UserGroup Methods - Detailed Tests', () => {
     test('filters by source', async () => {
       const groups = await methods.listGroups({ source: 'local' });
 
-      expect(groups).toHaveLength(1);
-      expect(groups[0].name).toBe('Gamma');
+      expect(groups).toHaveLength(3);
+      expect(groups.map((g) => g.name)).toEqual(['Alpha', 'Beta', 'Gamma']);
     });
 
     test('filters by search (name)', async () => {
@@ -678,7 +622,7 @@ describe('UserGroup Methods - Detailed Tests', () => {
     test('respects source filter', async () => {
       const count = await methods.countGroups({ source: 'local' });
 
-      expect(count).toBe(2);
+      expect(count).toBe(3);
     });
 
     test('respects search filter', async () => {

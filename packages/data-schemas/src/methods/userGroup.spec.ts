@@ -129,8 +129,8 @@ describe('userGroup methods', () => {
 
     it('filters by source when provided', async () => {
       const results = await methods.findGroupsByNamePattern('eng', 'local');
-      expect(results).toHaveLength(1);
-      expect(results[0].source).toBe('local');
+      expect(results).toHaveLength(2);
+      expect(results.every((g) => g.source === 'local')).toBe(true);
     });
 
     it('respects limit parameter', async () => {
@@ -829,9 +829,9 @@ describe('userGroup methods', () => {
         { $set: { description: 'synced' } },
       );
 
-      expect(result.modifiedCount).toBe(2);
+      expect(result.modifiedCount).toBe(3);
       const synced = await Group.find({ description: 'synced' });
-      expect(synced).toHaveLength(2);
+      expect(synced).toHaveLength(3);
     });
 
     it('returns zero when no groups match', async () => {

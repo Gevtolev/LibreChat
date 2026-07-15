@@ -11,14 +11,6 @@ jest.mock('@librechat/data-schemas', () => ({
   createMethods: jest.requireActual('@librechat/data-schemas').createMethods,
 }));
 
-jest.mock('~/server/services/GraphApiService', () => ({
-  entraIdPrincipalFeatureEnabled: jest.fn().mockReturnValue(false),
-  getUserOwnedEntraGroups: jest.fn().mockResolvedValue([]),
-  getUserEntraGroups: jest.fn().mockResolvedValue([]),
-  getGroupMembers: jest.fn().mockResolvedValue([]),
-  getGroupOwners: jest.fn().mockResolvedValue([]),
-}));
-
 jest.mock('~/config', () => ({
   logger: { error: jest.fn() },
 }));
