@@ -243,6 +243,7 @@ const AuthContextProvider = ({
     if (token == null || !token || !isAuthenticated) {
       silentRefresh();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doSetError is a new reference every render (useTimeout doesn't memoize it); adding it would re-run this effect on every render
   }, [
     token,
     isAuthenticated,
@@ -288,7 +289,7 @@ const AuthContextProvider = ({
       },
       isAuthenticated,
     }),
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- login is a new reference every render and logout is stable only via logoutUser; including them would defeat this memo
     [
       user,
       error,
