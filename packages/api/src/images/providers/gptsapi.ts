@@ -1,22 +1,23 @@
+import type { TGptsapiImageModel } from 'librechat-data-provider';
 import { createAxiosInstance, logAxiosError } from '~/utils/axios';
-import type { ImageModel } from './models';
+import type { GenerationOutcome, ImageProviderRuntimeConfig } from './types';
 
 const axios = createAxiosInstance();
 
-export interface ImageGenConfig {
-  baseUrl: string;
-  apiKey: string;
-}
+export const protocol = 'gptsapi-predictions' as const;
 
-export interface SubmitArgs {
-  model: ImageModel;
+export interface GptsapiGenerateArgs {
+  model: TGptsapiImageModel;
   prompt: string;
   aspectRatio: string;
   paramValue: string;
   imageUrls?: string[];
 }
 
-export async function submitPrediction(args: SubmitArgs, cfg: ImageGenConfig): Promise<string> {
+export async function generate(
+  args: GptsapiGenerateArgs,
+  cfg: ImageProviderRuntimeConfig,
+): Promise<GenerationOutcome> {
   const { model, prompt, aspectRatio, paramValue, imageUrls } = args;
   const isEdit = Array.isArray(imageUrls) && imageUrls.length > 0;
   const action = isEdit ? 'image-edit' : 'text-to-image';
@@ -37,31 +38,29 @@ export async function submitPrediction(args: SubmitArgs, cfg: ImageGenConfig): P
     if (!id) {
       throw new Error('gptsapi submit returned no prediction id');
     }
-    return id as string;
+    return { status: 'pending', jobId: id as string };
   } catch (error) {
     throw new Error(logAxiosError({ error, message: 'gptsapi image submit failed' }));
   }
 }
 
-export interface PredictionResult {
-  status: string;
-  outputs: string[];
-  error: string | null;
-}
-
-export async function getPrediction(
-  predictionId: string,
-  cfg: ImageGenConfig,
-): Promise<PredictionResult> {
-  const url = `${cfg.baseUrl}/api/v3/predictions/${predictionId}/result`;
+export async function poll(
+  jobId: string,
+  cfg: ImageProviderRuntimeConfig,
+): Promise<GenerationOutcome> {
+  const url = `${cfg.baseUrl}/api/v3/predictions/${jobId}/result`;
   try {
     const res = await axios.get(url, { headers: { Authorization: `Bearer ${cfg.apiKey}` } });
     const data = res.data?.data ?? {};
-    return {
-      status: data.status ?? 'unknown',
-      outputs: data.outputs ?? [],
-      error: data.error ?? null,
-    };
+    const status = data.status ?? 'unknown';
+    if (status === 'completed') {
+      const outputs = data.outputs ?? [];
+      return { status: 'completed', imageUrl: outputs[0] };
+    }
+    if (status === 'failed' || status === 'error') {
+      return { status: 'failed', error: data.error ?? 'image generation failed' };
+    }
+    return { status: 'pending', jobId };
   } catch (error) {
     throw new Error(logAxiosError({ error, message: 'gptsapi image poll failed' }));
   }

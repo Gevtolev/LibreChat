@@ -457,6 +457,57 @@ export const assistantEndpointSchema = baseEndpointSchema.merge(
 
 export type TAssistantEndpoint = z.infer<typeof assistantEndpointSchema>;
 
+const imageProviderCommonFields = {
+  name: z.string(),
+  apiKey: z.string(),
+  baseURL: z.string(),
+  aspectRatios: z.array(z.string()).min(1),
+};
+
+export const openRouterImageModelSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  isDefault: z.boolean().optional(),
+  supportsEdit: z.boolean(),
+  paramKey: z.union([z.literal('output_format'), z.literal('resolution')]),
+  paramValues: z.array(z.string()).min(1),
+  defaultParam: z.string(),
+});
+
+export const gptsapiImageModelSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  isDefault: z.boolean().optional(),
+  vendor: z.union([z.literal('google'), z.literal('openai')]),
+  supportsEdit: z.boolean(),
+  editImagesKey: z.union([z.literal('images'), z.literal('input_urls')]),
+  paramKey: z.union([z.literal('output_format'), z.literal('resolution')]),
+  paramValues: z.array(z.string()).min(1),
+  defaultParam: z.string(),
+});
+
+export const imageProviderConfigSchema = z.discriminatedUnion('protocol', [
+  z.object({
+    ...imageProviderCommonFields,
+    protocol: z.literal('openrouter'),
+    models: z.array(openRouterImageModelSchema).min(1),
+  }),
+  z.object({
+    ...imageProviderCommonFields,
+    protocol: z.literal('gptsapi-predictions'),
+    models: z.array(gptsapiImageModelSchema).min(1),
+  }),
+]);
+
+export const imageGenerationConfigSchema = z.object({
+  providers: z.array(imageProviderConfigSchema).min(1),
+});
+
+export type TOpenRouterImageModel = z.infer<typeof openRouterImageModelSchema>;
+export type TGptsapiImageModel = z.infer<typeof gptsapiImageModelSchema>;
+export type TImageProviderConfig = z.infer<typeof imageProviderConfigSchema>;
+export type TImageGenerationConfig = z.infer<typeof imageGenerationConfigSchema>;
+
 export const defaultAgentCapabilities = [
   // Commented as requires latest Code Interpreter API
   // AgentCapabilities.programmatic_tools,
@@ -1412,6 +1463,7 @@ export const configSchema = z.object({
   rateLimits: rateLimitSchema.optional(),
   fileConfig: fileConfigSchema.optional(),
   modelSpecs: specsConfigSchema.optional(),
+  imageGeneration: imageGenerationConfigSchema.optional(),
   endpoints: z
     .object({
       allowedAddresses: allowedAddressesSchema,

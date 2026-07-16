@@ -1,69 +1,55 @@
-export type ImageVendor = 'google' | 'openai';
-export type AspectRatio = 'auto' | '1:1' | '9:16' | '16:9' | '4:3' | '3:4';
-export const ASPECT_RATIOS: AspectRatio[] = ['auto', '1:1', '9:16', '16:9', '4:3', '3:4'];
+import type { TImageModel } from 'librechat-data-provider';
+import type { ResolvedImageProvider } from './providers/registry';
 
-export interface ImageModel {
-  id: string;
-  label: string;
-  vendor: ImageVendor;
-  supportsEdit: boolean;
-  editImagesKey: 'images' | 'input_urls';
-  paramKey: 'output_format' | 'resolution';
-  paramValues: string[];
-  defaultParam: string;
-  isDefault?: boolean;
+export function getImageModels(providers: ResolvedImageProvider[]): TImageModel[] {
+  const models: TImageModel[] = [];
+  for (const provider of providers) {
+    for (const model of provider.config.models) {
+      models.push({
+        id: model.id,
+        label: model.label,
+        provider: provider.name,
+        supportsEdit: model.supportsEdit,
+        paramKey: model.paramKey,
+        paramValues: model.paramValues,
+        defaultParam: model.defaultParam,
+      });
+    }
+  }
+  return models;
 }
 
-export const IMAGE_MODELS: ImageModel[] = [
-  {
-    id: 'gemini-3-pro-image-preview',
-    label: 'Nano Banana Pro',
-    vendor: 'google',
-    supportsEdit: true,
-    editImagesKey: 'images',
-    paramKey: 'output_format',
-    paramValues: ['png', 'jpeg'],
-    defaultParam: 'png',
-    isDefault: true,
-  },
-  {
-    id: 'gemini-3.1-flash-image-preview',
-    label: 'Nano Banana 2',
-    vendor: 'google',
-    supportsEdit: true,
-    editImagesKey: 'images',
-    paramKey: 'output_format',
-    paramValues: ['png', 'jpeg'],
-    defaultParam: 'png',
-  },
-  {
-    id: 'gemini-2.5-flash-image-hd',
-    label: 'Nano Banana',
-    vendor: 'google',
-    supportsEdit: true,
-    editImagesKey: 'images',
-    paramKey: 'output_format',
-    paramValues: ['png', 'jpeg'],
-    defaultParam: 'png',
-  },
-  {
-    id: 'gpt-image-2',
-    label: 'GPT Image 2',
-    vendor: 'openai',
-    supportsEdit: true,
-    editImagesKey: 'input_urls',
-    paramKey: 'resolution',
-    paramValues: ['1K', '2K', '4K'],
-    defaultParam: '1K',
-  },
-];
+export function getDefaultImageModel(providers: ResolvedImageProvider[]): TImageModel | undefined {
+  const models = getImageModels(providers);
+  for (const provider of providers) {
+    const defaultModel = provider.config.models.find((model) => model.isDefault);
+    if (defaultModel) {
+      return models.find((m) => m.id === defaultModel.id && m.provider === provider.name);
+    }
+  }
+  return models[0];
+}
 
-export const DEFAULT_IMAGE_MODEL_ID = (IMAGE_MODELS.find((m) => m.isDefault) ?? IMAGE_MODELS[0]).id;
+export function getAspectRatios(providers: ResolvedImageProvider[]): string[] {
+  const all = new Set<string>();
+  for (const provider of providers) {
+    for (const ratio of provider.config.aspectRatios) {
+      all.add(ratio);
+    }
+  }
+  return Array.from(all);
+}
 
-export function getImageModel(id: string): ImageModel {
-  const model = IMAGE_MODELS.find((m) => m.id === id);
+export function findImageModel(
+  providers: ResolvedImageProvider[],
+  providerName: string,
+  modelId: string,
+): TImageModel {
+  const model = getImageModels(providers).find(
+    (m) => m.provider === providerName && m.id === modelId,
+  );
   if (!model) {
-    throw new Error(`Unknown image model: ${id}`);
+    throw new Error(`Unknown image model "${modelId}" for provider "${providerName}"`);
   }
   return model;
 }

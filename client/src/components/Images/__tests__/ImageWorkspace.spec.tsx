@@ -23,6 +23,7 @@ const mockModelsConfig = {
     {
       id: 'flux-pro',
       label: 'Flux Pro',
+      provider: 'Flux',
       supportsEdit: false,
       paramKey: 'quality',
       paramValues: ['standard', 'hd'],
@@ -31,6 +32,7 @@ const mockModelsConfig = {
     {
       id: 'flux-edit',
       label: 'Flux Edit',
+      provider: 'Flux',
       supportsEdit: true,
       paramKey: 'quality',
       paramValues: ['standard'],
@@ -180,7 +182,7 @@ describe('ImageWorkspace', () => {
     expect(btn).not.toBeDisabled();
   });
 
-  it('clicking Generate calls mutate with prompt and default model', () => {
+  it('clicking Generate calls mutate with prompt, default model, and its provider', () => {
     render(<ImageWorkspace />);
     const textarea = screen.getByRole('textbox', { name: 'com_ui_image_prompt_placeholder' });
     fireEvent.change(textarea, { target: { value: 'a sunset over the mountains' } });
@@ -189,6 +191,7 @@ describe('ImageWorkspace', () => {
       expect.objectContaining({
         prompt: 'a sunset over the mountains',
         model: 'flux-pro',
+        provider: 'Flux',
       }),
     );
   });

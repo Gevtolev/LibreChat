@@ -5,6 +5,7 @@ export type TGeneratedImage = TFile;
 export interface TImageGenRequest {
   prompt: string;
   model: string;
+  provider: string;
   aspectRatio: string;
   param?: string;
   imageUrls?: string[];
@@ -22,6 +23,7 @@ export interface TImageResult {
 export interface TImageModel {
   id: string;
   label: string;
+  provider: string;
   supportsEdit: boolean;
   paramKey: string;
   paramValues: string[];

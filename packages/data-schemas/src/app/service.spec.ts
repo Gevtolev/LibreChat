@@ -114,3 +114,38 @@ describe('AppService memory capability', () => {
     );
   });
 });
+
+describe('AppService imageGeneration passthrough', () => {
+  it('passes through the imageGeneration config unchanged', async () => {
+    const config = {
+      imageGeneration: {
+        providers: [
+          {
+            name: 'OpenRouter',
+            protocol: 'openrouter',
+            apiKey: '${OPENROUTER_KEY}',
+            baseURL: 'https://openrouter.ai/api/v1',
+            aspectRatios: ['1:1'],
+            models: [
+              {
+                id: 'google/gemini-3-pro-image',
+                label: 'Nano Banana Pro',
+                supportsEdit: true,
+                paramKey: 'output_format',
+                paramValues: ['png'],
+                defaultParam: 'png',
+              },
+            ],
+          },
+        ],
+      },
+    } as DeepPartial<TCustomConfig>;
+    const result = await AppService({ config });
+    expect(result.imageGeneration?.providers?.[0]?.name).toBe('OpenRouter');
+  });
+
+  it('is undefined when not configured', async () => {
+    const result = await AppService({ config: {} as DeepPartial<TCustomConfig> });
+    expect(result.imageGeneration).toBeUndefined();
+  });
+});

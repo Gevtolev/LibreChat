@@ -128,7 +128,7 @@ export default function ImageWorkspace() {
   }, [result.data, result.isError, queryClient, localize]);
 
   const handleGenerate = () => {
-    if (!prompt.trim() || isGenerating) {
+    if (!prompt.trim() || isGenerating || !selectedModel) {
       return;
     }
     setErrorMsg(null);
@@ -136,6 +136,7 @@ export default function ImageWorkspace() {
     generateImage({
       prompt: applyStyleToPrompt(prompt.trim(), style),
       model,
+      provider: selectedModel.provider,
       aspectRatio,
       imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
     });
