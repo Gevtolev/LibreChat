@@ -362,6 +362,64 @@ describe('AuthContextProvider — silentRefresh post-login redirect', () => {
   });
 });
 
+describe('AuthContextProvider — guest-accessible path redirect skip', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('does not redirect to /login when unauthenticated on / with no refresh token', () => {
+    window.history.replaceState({}, '', '/');
+    renderProviderLive();
+
+    const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
+      unknown,
+      { onSuccess: (data: unknown) => void },
+    ];
+
+    act(() => {
+      refreshOptions.onSuccess({ user: undefined, token: '' });
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not redirect to /login when unauthenticated on /c/new after a refresh error', () => {
+    window.history.replaceState({}, '', '/c/new');
+    renderProviderLive();
+
+    const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
+      unknown,
+      { onError: (error: unknown) => void },
+    ];
+
+    act(() => {
+      refreshOptions.onError(new Error('refresh failed'));
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('still redirects to /login when unauthenticated on a non-whitelisted path', () => {
+    window.history.replaceState({}, '', '/bookmarks');
+    renderProviderLive();
+
+    const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
+      unknown,
+      { onSuccess: (data: unknown) => void },
+    ];
+
+    act(() => {
+      refreshOptions.onSuccess({ user: undefined, token: '' });
+    });
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('AuthContextProvider — silentRefresh subdirectory deployment', () => {
   beforeEach(() => {
     jest.clearAllMocks();

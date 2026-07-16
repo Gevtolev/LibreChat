@@ -27,7 +27,7 @@ import {
   useRefreshTokenMutation,
 } from '~/data-provider';
 import { TAuthConfig, TUserContext, TAuthContext, TResError } from '~/common';
-import { SESSION_KEY, isSafeRedirect, getPostLoginRedirect } from '~/utils';
+import { SESSION_KEY, isSafeRedirect, getPostLoginRedirect, isGuestAccessiblePath } from '~/utils';
 import useTimeout from './useTimeout';
 import store from '~/store';
 
@@ -205,6 +205,9 @@ const AuthContextProvider = ({
         if (authConfig?.test === true) {
           return;
         }
+        if (isGuestAccessiblePath(window.location.pathname)) {
+          return;
+        }
         navigate(buildLoginRedirectUrl());
       },
       onError: (error) => {
@@ -213,6 +216,9 @@ const AuthContextProvider = ({
         }
         console.log('refreshToken mutation error:', error);
         if (authConfig?.test === true) {
+          return;
+        }
+        if (isGuestAccessiblePath(window.location.pathname)) {
           return;
         }
         navigate(buildLoginRedirectUrl());

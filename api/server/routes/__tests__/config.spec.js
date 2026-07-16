@@ -165,6 +165,27 @@ describe('GET /api/config', () => {
       expect(response.body.turnstile).toEqual({ siteKey: 'test-key' });
     });
 
+    it('should set guestChatEnabled to false when guestChat is not configured', async () => {
+      mockGetAppConfig.mockResolvedValue(baseAppConfig);
+      const app = createApp(null);
+
+      const response = await request(app).get('/api/config');
+
+      expect(response.body.guestChatEnabled).toBe(false);
+    });
+
+    it('should set guestChatEnabled to true when guestChat has a provider and model', async () => {
+      mockGetAppConfig.mockResolvedValue({
+        ...baseAppConfig,
+        guestChat: { provider: 'openAI', model: 'gpt-4o-mini' },
+      });
+      const app = createApp(null);
+
+      const response = await request(app).get('/api/config');
+
+      expect(response.body.guestChatEnabled).toBe(true);
+    });
+
     it('should include only privacyPolicy and termsOfService from interface config', async () => {
       mockGetAppConfig.mockResolvedValue(baseAppConfig);
       const app = createApp(null);

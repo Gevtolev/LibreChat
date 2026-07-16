@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useMediaQuery } from '@librechat/client';
 import {
   useSearchEnabled,
@@ -18,10 +18,12 @@ import {
   FileMapContext,
 } from '~/Providers';
 import { useUserTermsQuery, useGetStartupConfig } from '~/data-provider';
+import { GuestChatLanding } from '~/components/Guest';
 import { UnifiedSidebar } from '~/components/UnifiedSidebar';
 import { TermsAndConditionsModal } from '~/components/ui';
 import { useHealthCheck } from '~/data-provider';
 import { Banner } from '~/components/Banners';
+import { isGuestAccessiblePath } from '~/utils';
 
 export default function Root() {
   const [showTerms, setShowTerms] = useState(false);
@@ -30,6 +32,7 @@ export default function Root() {
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
 
   const { isAuthenticated, logout } = useAuthContext();
+  const location = useLocation();
 
   useHealthCheck(isAuthenticated);
 
@@ -60,6 +63,9 @@ export default function Root() {
   };
 
   if (!isAuthenticated) {
+    if (config?.guestChatEnabled && isGuestAccessiblePath(location.pathname)) {
+      return <GuestChatLanding />;
+    }
     return null;
   }
 
