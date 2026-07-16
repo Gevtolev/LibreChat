@@ -38,8 +38,37 @@ jest.mock('~/server/utils/getFileStrategy', () => ({
 }));
 
 // --- mock app config ---
+const TEST_IMAGE_GENERATION_CONFIG = {
+  providers: [
+    {
+      name: 'GPTsAPI',
+      protocol: 'gptsapi-predictions',
+      apiKey: 'test-gptsapi-key',
+      baseURL: 'https://api.gptsapi.net',
+      aspectRatios: ['auto', '1:1', '9:16', '16:9', '4:3', '3:4'],
+      models: [
+        {
+          id: 'gemini-3-pro-image-preview',
+          label: 'Nano Banana Pro',
+          isDefault: true,
+          vendor: 'google',
+          supportsEdit: true,
+          editImagesKey: 'images',
+          paramKey: 'output_format',
+          paramValues: ['png', 'jpeg'],
+          defaultParam: 'png',
+        },
+      ],
+    },
+  ],
+};
+
+const mockGetAppConfig = jest.fn(async () => ({
+  fileStrategy: 'local',
+  imageGeneration: TEST_IMAGE_GENERATION_CONFIG,
+}));
 jest.mock('~/server/services/Config', () => ({
-  getAppConfig: jest.fn(async () => ({ fileStrategy: 'local' })),
+  getAppConfig: (...args) => mockGetAppConfig(...args),
 }));
 
 // --- ~/models: delegate to REAL mongoose-backed methods (in-memory Mongo) ---
@@ -93,57 +122,92 @@ beforeEach(async () => {
   jest.clearAllMocks();
   mockSubmitGeneration.mockImplementation((...args) => actualApi.submitGeneration(...args));
   mockResolveResult.mockImplementation((...args) => actualApi.resolveResult(...args));
+  mockGetAppConfig.mockImplementation(async () => ({
+    fileStrategy: 'local',
+    imageGeneration: TEST_IMAGE_GENERATION_CONFIG,
+  }));
   await File.deleteMany({});
 });
 
 describe('GET /api/images/models', () => {
-  it('returns model list, default, and aspect ratios', async () => {
+  it('returns model list (tagged with provider), default, and aspect ratios', async () => {
     const { app } = createApp();
     const res = await request(app).get('/api/images/models');
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.models)).toBe(true);
-    expect(res.body.models.length).toBeGreaterThan(0);
-    expect(res.body.default).toBe(actualApi.DEFAULT_IMAGE_MODEL_ID);
-    expect(res.body.aspectRatios).toEqual(actualApi.ASPECT_RATIOS);
+    expect(res.body.models).toEqual([
+      expect.objectContaining({ id: 'gemini-3-pro-image-preview', provider: 'GPTsAPI' }),
+    ]);
+    expect(res.body.default).toBe('gemini-3-pro-image-preview');
+    expect(res.body.aspectRatios).toEqual(
+      expect.arrayContaining(['auto', '1:1', '9:16', '16:9', '4:3', '3:4']),
+    );
   });
 });
 
 describe('POST /api/images/generate', () => {
   it('calls submitGeneration and caches ctx, returns predictionId', async () => {
-    mockSubmitGeneration.mockResolvedValue({ predictionId: 'pred-abc' });
+    mockSubmitGeneration.mockResolvedValue({ status: 'pending', predictionId: 'pred-abc' });
 
     const { app, user } = createApp();
     const res = await request(app)
       .post('/api/images/generate')
-      .send({ prompt: 'a sunset', model: actualApi.DEFAULT_IMAGE_MODEL_ID, aspectRatio: '16:9' });
+      .send({
+        prompt: 'a sunset',
+        model: 'gemini-3-pro-image-preview',
+        provider: 'GPTsAPI',
+        aspectRatio: '16:9',
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.predictionId).toBe('pred-abc');
 
     expect(mockSubmitGeneration).toHaveBeenCalledWith(
-      expect.objectContaining({ prompt: 'a sunset', aspectRatio: '16:9' }),
-      expect.objectContaining({ baseUrl: expect.any(String) }),
+      expect.objectContaining({ providerName: 'GPTsAPI', prompt: 'a sunset', aspectRatio: '16:9' }),
+      expect.any(Array),
+      expect.objectContaining({ fetchImage: expect.any(Function) }),
+      user.id,
     );
 
     expect(mockCacheSet).toHaveBeenCalledWith(
       'pred-abc',
-      expect.objectContaining({ userId: user.id, prompt: 'a sunset' }),
+      expect.objectContaining({ userId: user.id, provider: 'GPTsAPI', prompt: 'a sunset' }),
       expect.any(Number),
     );
   });
 
-  it('uses default model and 1:1 when not provided', async () => {
-    mockSubmitGeneration.mockResolvedValue({ predictionId: 'pred-def' });
+  it('uses default model/provider and 1:1 when not provided', async () => {
+    mockSubmitGeneration.mockResolvedValue({ status: 'pending', predictionId: 'pred-def' });
 
     const { app } = createApp();
     const res = await request(app).post('/api/images/generate').send({ prompt: 'mountains' });
 
     expect(res.status).toBe(200);
     expect(mockSubmitGeneration).toHaveBeenCalledWith(
-      expect.objectContaining({ model: actualApi.DEFAULT_IMAGE_MODEL_ID, aspectRatio: '1:1' }),
+      expect.objectContaining({
+        model: 'gemini-3-pro-image-preview',
+        providerName: 'GPTsAPI',
+        aspectRatio: '1:1',
+      }),
+      expect.any(Array),
       expect.anything(),
+      expect.any(String),
     );
+  });
+
+  it('does not write to cache when submitGeneration resolves synchronously (completed)', async () => {
+    mockSubmitGeneration.mockResolvedValue({
+      status: 'completed',
+      predictionId: 'pred-sync-1',
+      file: { _id: 'file-1', context: 'image_generation' },
+    });
+
+    const { app } = createApp();
+    const res = await request(app).post('/api/images/generate').send({ prompt: 'a robot' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.predictionId).toBe('pred-sync-1');
+    expect(mockCacheSet).not.toHaveBeenCalled();
   });
 
   it('returns 400 when submitGeneration throws', async () => {
@@ -152,7 +216,7 @@ describe('POST /api/images/generate', () => {
     const { app } = createApp();
     const res = await request(app)
       .post('/api/images/generate')
-      .send({ model: actualApi.DEFAULT_IMAGE_MODEL_ID });
+      .send({ model: 'gemini-3-pro-image-preview' });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('prompt is required');
@@ -163,7 +227,7 @@ describe('GET /api/images/result/:predictionId (handler wiring)', () => {
   it('returns resolveResult output and deletes cache on completed', async () => {
     const fileRecord = { _id: 'file-1', filepath: '/images/test.png', context: 'image_generation' };
     const { app, user } = createApp();
-    mockCacheGet.mockResolvedValue({ userId: user.id, model: 'm', prompt: 'a sunset' });
+    mockCacheGet.mockResolvedValue({ userId: user.id, provider: 'GPTsAPI', model: 'm', prompt: 'a sunset' });
     mockResolveResult.mockResolvedValue({ status: 'completed', file: fileRecord });
 
     const res = await request(app).get('/api/images/result/pred-abc');
@@ -172,12 +236,13 @@ describe('GET /api/images/result/:predictionId (handler wiring)', () => {
     expect(res.body.status).toBe('completed');
     expect(res.body.file).toBeDefined();
     expect(mockResolveResult).toHaveBeenCalledWith(
-      expect.objectContaining({ predictionId: 'pred-abc' }),
+      expect.objectContaining({ predictionId: 'pred-abc', providerName: 'GPTsAPI' }),
       expect.objectContaining({
         fetchImage: expect.any(Function),
+        fetchImageFromB64: expect.any(Function),
         saveImageFile: expect.any(Function),
       }),
-      expect.objectContaining({ baseUrl: expect.any(String) }),
+      expect.any(Array),
     );
     expect(mockCacheDelete).toHaveBeenCalledWith('pred-abc');
   });
@@ -219,7 +284,7 @@ describe('GET /api/images/result/:predictionId (handler wiring)', () => {
     expect(mockCacheDelete).not.toHaveBeenCalled();
   });
 
-  it('uses fallback model/prompt when ctx is missing from cache', async () => {
+  it('uses fallback provider/model/prompt when ctx is missing from cache', async () => {
     mockCacheGet.mockResolvedValue(null);
     mockResolveResult.mockResolvedValue({ status: 'processing' });
 
@@ -227,7 +292,7 @@ describe('GET /api/images/result/:predictionId (handler wiring)', () => {
     await request(app).get('/api/images/result/pred-nocache');
 
     expect(mockResolveResult).toHaveBeenCalledWith(
-      expect.objectContaining({ model: 'unknown', prompt: '' }),
+      expect.objectContaining({ providerName: 'unknown', model: 'unknown', prompt: '' }),
       expect.anything(),
       expect.anything(),
     );
@@ -254,7 +319,6 @@ describe('GET /api/images/result/:predictionId — real completed path (M-1)', (
   let server;
   let baseUrl;
   let pngBuffer;
-  let prevBaseUrl;
 
   beforeAll(async () => {
     pngBuffer = await sharp({
@@ -284,23 +348,44 @@ describe('GET /api/images/result/:predictionId — real completed path (M-1)', (
 
     await new Promise((resolve) => server.listen(0, resolve));
     baseUrl = `http://127.0.0.1:${server.address().port}`;
-    prevBaseUrl = process.env.GPTSAPI_BASE_URL;
-    process.env.GPTSAPI_BASE_URL = baseUrl;
   });
 
   afterAll(async () => {
-    if (prevBaseUrl === undefined) {
-      delete process.env.GPTSAPI_BASE_URL;
-    } else {
-      process.env.GPTSAPI_BASE_URL = prevBaseUrl;
-    }
     await new Promise((resolve) => server.close(resolve));
   });
 
   it('downloads, stores, and persists a File with context image_generation', async () => {
+    mockGetAppConfig.mockResolvedValueOnce({
+      fileStrategy: 'local',
+      imageGeneration: {
+        providers: [
+          {
+            name: 'GPTsAPI',
+            protocol: 'gptsapi-predictions',
+            apiKey: 'test-key',
+            baseURL: baseUrl,
+            aspectRatios: ['1:1'],
+            models: [
+              {
+                id: 'flux-1.1-ultra',
+                label: 'Flux 1.1 Ultra',
+                vendor: 'google',
+                supportsEdit: false,
+                editImagesKey: 'images',
+                paramKey: 'output_format',
+                paramValues: ['png'],
+                defaultParam: 'png',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
     const { app, user } = createApp();
     mockCacheGet.mockResolvedValue({
       userId: user.id,
+      provider: 'GPTsAPI',
       model: 'flux-1.1-ultra',
       prompt: 'a real sunset',
     });

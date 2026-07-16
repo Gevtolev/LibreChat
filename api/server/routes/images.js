@@ -7,9 +7,10 @@ const { CacheKeys } = require('librechat-data-provider');
 const {
   submitGeneration,
   resolveResult,
-  IMAGE_MODELS,
-  DEFAULT_IMAGE_MODEL_ID,
-  ASPECT_RATIOS,
+  resolveImageProviders,
+  getImageModels,
+  getDefaultImageModel,
+  getAspectRatios,
   getStorageMetadata,
 } = require('@librechat/api');
 const { getStrategyFunctions } = require('~/server/services/Files/strategies');
@@ -22,14 +23,9 @@ const db = require('~/models');
 const router = express.Router();
 router.use(requireJwtAuth);
 
-/** @returns {{ baseUrl: string, apiKey: string }} */
-const cfg = () => ({
-  baseUrl: process.env.GPTSAPI_BASE_URL || 'https://api.gptsapi.net',
-  apiKey: process.env.GPTSAPI_KEY,
-});
-
 const PENDING_TTL = 30 * 60 * 1000;
 
+/** @returns {import('@librechat/api').ImageDeps} */
 const buildDeps = (appConfig, req) => ({
   fetchImage: async (url) => {
     const r = await axios.get(url, { responseType: 'arraybuffer', timeout: 60000 });
@@ -38,6 +34,16 @@ const buildDeps = (appConfig, req) => ({
     return {
       buffer,
       contentType: r.headers['content-type'] || 'image/png',
+      width: meta.width,
+      height: meta.height,
+    };
+  },
+  fetchImageFromB64: async (b64, mediaType) => {
+    const buffer = Buffer.from(b64, 'base64');
+    const meta = await sharp(buffer).metadata();
+    return {
+      buffer,
+      contentType: mediaType || 'image/png',
       width: meta.width,
       height: meta.height,
     };
@@ -72,29 +78,47 @@ const buildDeps = (appConfig, req) => ({
   },
 });
 
-router.get('/models', (req, res) => {
-  res.json({ models: IMAGE_MODELS, default: DEFAULT_IMAGE_MODEL_ID, aspectRatios: ASPECT_RATIOS });
+router.get('/models', async (req, res) => {
+  const appConfig = await getAppConfig({ role: req.user.role });
+  const providers = resolveImageProviders(appConfig.imageGeneration);
+  const defaultModel = getDefaultImageModel(providers);
+  res.json({
+    models: getImageModels(providers),
+    default: defaultModel?.id,
+    aspectRatios: getAspectRatios(providers),
+  });
 });
 
 router.post('/generate', async (req, res) => {
   try {
-    const { prompt, model, aspectRatio, param, imageUrls } = req.body;
-    const { predictionId } = await submitGeneration(
+    const appConfig = await getAppConfig({ role: req.user.role });
+    const providers = resolveImageProviders(appConfig.imageGeneration);
+    const deps = buildDeps(appConfig, req);
+    const defaultModel = getDefaultImageModel(providers);
+    const { prompt, model, provider, aspectRatio, param, imageUrls } = req.body;
+    const providerName = provider || defaultModel?.provider;
+    const modelId = model || defaultModel?.id;
+    const result = await submitGeneration(
       {
-        model: model || DEFAULT_IMAGE_MODEL_ID,
+        providerName,
+        model: modelId,
         prompt,
         aspectRatio: aspectRatio || '1:1',
         param,
         imageUrls,
       },
-      cfg(),
+      providers,
+      deps,
+      req.user.id,
     );
-    await getLogStores(CacheKeys.IMAGE_GENERATION).set(
-      predictionId,
-      { userId: req.user.id, model: model || DEFAULT_IMAGE_MODEL_ID, prompt },
-      PENDING_TTL,
-    );
-    res.json({ predictionId });
+    if (result.status === 'pending') {
+      await getLogStores(CacheKeys.IMAGE_GENERATION).set(
+        result.predictionId,
+        { userId: req.user.id, provider: providerName, model: modelId, prompt },
+        PENDING_TTL,
+      );
+    }
+    res.json({ predictionId: result.predictionId });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -109,16 +133,18 @@ router.get('/result/:predictionId', async (req, res) => {
       return res.status(403).json({ message: 'forbidden' });
     }
     const appConfig = await getAppConfig({ role: req.user.role });
+    const providers = resolveImageProviders(appConfig.imageGeneration);
     const deps = buildDeps(appConfig, req);
     const out = await resolveResult(
       {
         predictionId,
         userId: req.user.id,
+        providerName: ctx.provider || 'unknown',
         model: ctx.model || 'unknown',
         prompt: ctx.prompt || '',
       },
       deps,
-      cfg(),
+      providers,
     );
     if (out.status === 'completed' || out.status === 'failed') {
       await cache.delete(predictionId);
