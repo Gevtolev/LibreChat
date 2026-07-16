@@ -37,6 +37,7 @@ let mockCapturedLogoutOptions: {
 };
 
 const mockRefreshMutate = jest.fn();
+const mockGetStartupConfig = jest.fn(() => ({ data: { guestChatEnabled: false } }));
 
 jest.mock('~/data-provider', () => ({
   useLoginUserMutation: jest.fn(
@@ -65,7 +66,12 @@ jest.mock('~/data-provider', () => ({
   })),
   useGetRole: jest.fn(() => ({ data: null })),
   useListRoles: jest.fn(() => ({ data: undefined })),
+  useGetStartupConfig: jest.fn(() => mockGetStartupConfig()),
 }));
+
+afterEach(() => {
+  mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: false } });
+});
 
 const authConfig: TAuthConfig = { loginRedirect: '/login', test: true };
 
@@ -371,7 +377,8 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('does not redirect to /login when unauthenticated on / with no refresh token', () => {
+  it('does not redirect to /login when unauthenticated on / with no refresh token and guestChatEnabled', () => {
+    mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: true } });
     window.history.replaceState({}, '', '/');
     renderProviderLive();
 
@@ -387,7 +394,8 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('does not redirect to /login when unauthenticated on /c/new after a refresh error', () => {
+  it('does not redirect to /login when unauthenticated on /c/new after a refresh error and guestChatEnabled', () => {
+    mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: true } });
     window.history.replaceState({}, '', '/c/new');
     renderProviderLive();
 
@@ -403,8 +411,32 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('still redirects to /login when unauthenticated on a non-whitelisted path', () => {
+  it('still redirects to /login when unauthenticated on a non-whitelisted path even with guestChatEnabled', () => {
+    mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: true } });
     window.history.replaceState({}, '', '/bookmarks');
+    renderProviderLive();
+
+    const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
+      unknown,
+      { onSuccess: (data: unknown) => void },
+    ];
+
+    act(() => {
+      refreshOptions.onSuccess({ user: undefined, token: '' });
+    });
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Regression test: guestChatEnabled defaults to false/unconfigured (the
+   * production default). Without gating the redirect-skip on this flag, an
+   * unauthenticated visit to `/` never redirects to `/login` AND `Root.tsx`
+   * has nothing to render in its place (guest landing page is also gated on
+   * guestChatEnabled) — the user sees a permanent blank page.
+   */
+  it('still redirects to /login on / when guestChatEnabled is false (default)', () => {
+    window.history.replaceState({}, '', '/');
     renderProviderLive();
 
     const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [

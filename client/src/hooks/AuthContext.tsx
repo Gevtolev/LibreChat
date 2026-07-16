@@ -25,6 +25,7 @@ import {
   useLoginUserMutation,
   useLogoutUserMutation,
   useRefreshTokenMutation,
+  useGetStartupConfig,
 } from '~/data-provider';
 import { TAuthConfig, TUserContext, TAuthContext, TResError } from '~/common';
 import { SESSION_KEY, isSafeRedirect, getPostLoginRedirect, isGuestAccessiblePath } from '~/utils';
@@ -66,6 +67,10 @@ const AuthContextProvider = ({
   });
 
   const navigate = useNavigate();
+  const { data: startupConfig } = useGetStartupConfig();
+  /** Read fresh inside `silentRefresh`'s stale closure (empty useCallback deps below). */
+  const guestChatEnabledRef = useRef(false);
+  guestChatEnabledRef.current = !!startupConfig?.guestChatEnabled;
 
   const setUserContext = useMemo(
     () =>
@@ -205,7 +210,7 @@ const AuthContextProvider = ({
         if (authConfig?.test === true) {
           return;
         }
-        if (isGuestAccessiblePath(window.location.pathname)) {
+        if (guestChatEnabledRef.current && isGuestAccessiblePath(window.location.pathname)) {
           return;
         }
         navigate(buildLoginRedirectUrl());
@@ -218,7 +223,7 @@ const AuthContextProvider = ({
         if (authConfig?.test === true) {
           return;
         }
-        if (isGuestAccessiblePath(window.location.pathname)) {
+        if (guestChatEnabledRef.current && isGuestAccessiblePath(window.location.pathname)) {
           return;
         }
         navigate(buildLoginRedirectUrl());
