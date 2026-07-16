@@ -150,14 +150,12 @@ describe('POST /api/images/generate', () => {
     mockSubmitGeneration.mockResolvedValue({ status: 'pending', predictionId: 'pred-abc' });
 
     const { app, user } = createApp();
-    const res = await request(app)
-      .post('/api/images/generate')
-      .send({
-        prompt: 'a sunset',
-        model: 'gemini-3-pro-image-preview',
-        provider: 'GPTsAPI',
-        aspectRatio: '16:9',
-      });
+    const res = await request(app).post('/api/images/generate').send({
+      prompt: 'a sunset',
+      model: 'gemini-3-pro-image-preview',
+      provider: 'GPTsAPI',
+      aspectRatio: '16:9',
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.predictionId).toBe('pred-abc');
@@ -227,7 +225,12 @@ describe('GET /api/images/result/:predictionId (handler wiring)', () => {
   it('returns resolveResult output and deletes cache on completed', async () => {
     const fileRecord = { _id: 'file-1', filepath: '/images/test.png', context: 'image_generation' };
     const { app, user } = createApp();
-    mockCacheGet.mockResolvedValue({ userId: user.id, provider: 'GPTsAPI', model: 'm', prompt: 'a sunset' });
+    mockCacheGet.mockResolvedValue({
+      userId: user.id,
+      provider: 'GPTsAPI',
+      model: 'm',
+      prompt: 'a sunset',
+    });
     mockResolveResult.mockResolvedValue({ status: 'completed', file: fileRecord });
 
     const res = await request(app).get('/api/images/result/pred-abc');

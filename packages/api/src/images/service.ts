@@ -158,7 +158,12 @@ export async function resolveResult(
   }
   const file = await downloadAndSaveOutcome(
     outcome,
-    { userId: args.userId, model: args.model, prompt: args.prompt, predictionId: args.predictionId },
+    {
+      userId: args.userId,
+      model: args.model,
+      prompt: args.prompt,
+      predictionId: args.predictionId,
+    },
     deps,
   );
   return { status: 'completed', file };
