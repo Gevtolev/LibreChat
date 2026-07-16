@@ -116,6 +116,7 @@ export const AppService = async (params?: {
   const interfaceConfig = await loadDefaultInterface({ config, configDefaults });
   const turnstileConfig = loadTurnstileConfig(config, configDefaults);
   const speech = config.speech;
+  const imageGeneration = config.imageGeneration;
 
   const defaultConfig = {
     ocr,
@@ -123,6 +124,7 @@ export const AppService = async (params?: {
     config,
     memory,
     speech,
+    imageGeneration,
     balance,
     actions,
     webSearch,

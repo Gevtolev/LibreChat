@@ -60,6 +60,8 @@ export interface AppConfig {
   summarization?: SummarizationConfig;
   /** Web search configuration */
   webSearch?: TCustomConfig['webSearch'];
+  /** Image generation provider configuration */
+  imageGeneration?: TCustomConfig['imageGeneration'];
   /** File storage strategy ('local', 's3', 'firebase', 'azure_blob', 'cloudfront') */
   fileStrategy: FileStorage;
   /** File strategies configuration */
