@@ -9,6 +9,7 @@ import {
   fileStrategiesSchema,
   summarizationTriggerSchema,
   summarizationConfigSchema,
+  imageGenerationConfigSchema,
 } from '../src/config';
 import { tModelSpecPresetSchema, EModelEndpoint } from '../src/schemas';
 import { specsConfigSchema } from '../src/models';
@@ -780,6 +781,119 @@ describe('specsConfigSchema', () => {
 
   it('still rejects null list', () => {
     const result = specsConfigSchema.safeParse({ list: null });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('imageGenerationConfigSchema', () => {
+  it('accepts a valid OpenRouter provider entry', () => {
+    const result = imageGenerationConfigSchema.safeParse({
+      providers: [
+        {
+          name: 'OpenRouter',
+          protocol: 'openrouter',
+          apiKey: '${OPENROUTER_KEY}',
+          baseURL: 'https://openrouter.ai/api/v1',
+          aspectRatios: ['auto', '1:1', '9:16', '16:9', '4:3', '3:4'],
+          models: [
+            {
+              id: 'google/gemini-3-pro-image',
+              label: 'Nano Banana Pro',
+              isDefault: true,
+              supportsEdit: true,
+              paramKey: 'output_format',
+              paramValues: ['png', 'jpeg'],
+              defaultParam: 'png',
+            },
+          ],
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a valid GPTsAPI provider entry with vendor/editImagesKey', () => {
+    const result = imageGenerationConfigSchema.safeParse({
+      providers: [
+        {
+          name: 'GPTsAPI',
+          protocol: 'gptsapi-predictions',
+          apiKey: '${GPTSAPI_KEY}',
+          baseURL: 'https://api.gptsapi.net',
+          aspectRatios: ['auto', '1:1', '9:16', '16:9', '4:3', '3:4'],
+          models: [
+            {
+              id: 'gemini-3-pro-image-preview',
+              label: 'Nano Banana Pro (GPTsAPI)',
+              vendor: 'google',
+              supportsEdit: true,
+              editImagesKey: 'images',
+              paramKey: 'output_format',
+              paramValues: ['png', 'jpeg'],
+              defaultParam: 'png',
+            },
+          ],
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an unknown protocol', () => {
+    const result = imageGenerationConfigSchema.safeParse({
+      providers: [
+        {
+          name: 'X',
+          protocol: 'unknown-protocol',
+          apiKey: 'k',
+          baseURL: 'https://x.example.com',
+          aspectRatios: ['1:1'],
+          models: [],
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a provider with an empty models array', () => {
+    const result = imageGenerationConfigSchema.safeParse({
+      providers: [
+        {
+          name: 'OpenRouter',
+          protocol: 'openrouter',
+          apiKey: 'k',
+          baseURL: 'https://openrouter.ai/api/v1',
+          aspectRatios: ['1:1'],
+          models: [],
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a gptsapi model missing vendor', () => {
+    const result = imageGenerationConfigSchema.safeParse({
+      providers: [
+        {
+          name: 'GPTsAPI',
+          protocol: 'gptsapi-predictions',
+          apiKey: 'k',
+          baseURL: 'https://api.gptsapi.net',
+          aspectRatios: ['1:1'],
+          models: [
+            {
+              id: 'gemini-3-pro-image-preview',
+              label: 'Nano Banana Pro',
+              supportsEdit: true,
+              editImagesKey: 'images',
+              paramKey: 'output_format',
+              paramValues: ['png'],
+              defaultParam: 'png',
+            },
+          ],
+        },
+      ],
+    });
     expect(result.success).toBe(false);
   });
 });
