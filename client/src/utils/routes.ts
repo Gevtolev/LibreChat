@@ -5,3 +5,7 @@ const matchesRouteStart = (pathname: string, pattern: string) =>
 
 export const isArtifactRoute = (pathname: string) =>
   matchesRouteStart(pathname, '/c/*') || matchesRouteStart(pathname, '/share/*');
+
+/** Paths an unauthenticated guest may view without being redirected to `/login`. */
+export const isGuestAccessiblePath = (pathname: string) =>
+  pathname === '/' || pathname === '/c/new';

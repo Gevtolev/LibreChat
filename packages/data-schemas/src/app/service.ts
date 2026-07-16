@@ -12,6 +12,7 @@ import type {
 } from 'librechat-data-provider';
 import type { AppConfig, FunctionTool } from '~/types/app';
 import { loadMemoryConfig, isMemoryEnabled } from './memory';
+import { loadGuestChatConfig } from './guestChat';
 import { loadDefaultInterface } from './interface';
 import { loadTurnstileConfig } from './turnstile';
 import { agentsConfigSetup } from './agents';
@@ -88,6 +89,7 @@ export const AppService = async (params?: {
   const ocr = loadOCRConfig(config.ocr);
   const webSearch = loadWebSearchConfig(config.webSearch);
   const memory = loadMemoryConfig(config.memory);
+  const guestChat = loadGuestChatConfig(config.guestChat);
   const summarization = loadSummarizationConfig(config);
   const filteredTools = config.filteredTools;
   const includedTools = config.includedTools;
@@ -123,6 +125,7 @@ export const AppService = async (params?: {
     paths,
     config,
     memory,
+    guestChat,
     speech,
     imageGeneration,
     balance,
