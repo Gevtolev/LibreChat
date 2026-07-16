@@ -1186,6 +1186,10 @@ export function getBanner(): Promise<t.TBannerResponse> {
   return request.get(endpoints.banner());
 }
 
+export function guestChat(payload: t.TGuestChatRequest): Promise<t.TGuestChatResponse> {
+  return request.post(endpoints.guestChat(), payload);
+}
+
 export function updateFeedback(
   conversationId: string,
   messageId: string,

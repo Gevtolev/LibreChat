@@ -1100,6 +1100,7 @@ export type TStartupConfig = {
   modelDescriptions?: Record<string, Record<string, string>>;
   sharedLinksEnabled: boolean;
   publicSharedLinksEnabled: boolean;
+  guestChatEnabled?: boolean;
   analyticsGtmId?: string;
   bundlerURL?: string;
   staticBundlerURL?: string;
@@ -1312,6 +1313,17 @@ export const memorySchema = z.object({
 
 export type TMemoryConfig = DeepPartial<z.infer<typeof memorySchema>>;
 
+export const guestChatSchema = z.object({
+  enabled: z.boolean().optional(),
+  provider: z.string(),
+  model: z.string(),
+  instructions: z.string().optional(),
+  model_parameters: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
+  messageLimit: z.number().int().positive().optional().default(1),
+});
+
+export type TGuestChatConfig = DeepPartial<z.infer<typeof guestChatSchema>>;
+
 export const summarizationTriggerSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('token_ratio'),
@@ -1358,6 +1370,7 @@ export const configSchema = z.object({
   ocr: ocrSchema.optional(),
   webSearch: webSearchSchema.optional(),
   memory: memorySchema.optional(),
+  guestChat: guestChatSchema.optional(),
   summarization: summarizationConfigSchema.optional(),
   secureImageLinks: z.boolean().optional(),
   imageOutputType: z.nativeEnum(EImageOutputType).default(EImageOutputType.PNG),

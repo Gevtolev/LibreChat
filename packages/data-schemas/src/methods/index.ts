@@ -76,6 +76,7 @@ import { createConfigMethods, type ConfigMethods } from './config';
 /* Billing */
 import { createSubscriptionMethods, type SubscriptionMethods } from './subscription';
 import { createQuotaMethods, type QuotaMethods } from './quota';
+import { createGuestUsageMethods, type GuestUsageMethods } from './guestUsage';
 import { createUsageLogMethods, type UsageLogMethods } from './usageLog';
 import { createAuditLogMethods, type AuditLogMethods } from './auditLog';
 
@@ -118,6 +119,7 @@ export type AllMethods = UserMethods &
   ConfigMethods &
   SubscriptionMethods &
   QuotaMethods &
+  GuestUsageMethods &
   UsageLogMethods &
   AuditLogMethods;
 
@@ -253,6 +255,7 @@ export function createMethods(
     /* Billing */
     ...createSubscriptionMethods(mongoose),
     ...createQuotaMethods(mongoose),
+    ...createGuestUsageMethods(mongoose),
     ...createUsageLogMethods(mongoose),
     ...createAuditLogMethods(mongoose),
   };

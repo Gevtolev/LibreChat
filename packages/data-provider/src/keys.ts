@@ -130,4 +130,5 @@ export enum MutationKeys {
   updateSkillNodeContent = 'updateSkillNodeContent',
   /* Image Workspace */
   imageGenerate = 'imageGenerate',
+  guestChat = 'guestChat',
 }

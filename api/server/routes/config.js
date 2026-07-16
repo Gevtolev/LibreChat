@@ -8,7 +8,12 @@ const {
   excludeHiddenModelSpecs,
 } = require('@librechat/api');
 const { defaultSocialLogins } = require('librechat-data-provider');
-const { logger, getTenantId, SystemCapabilities } = require('@librechat/data-schemas');
+const {
+  logger,
+  getTenantId,
+  SystemCapabilities,
+  isGuestChatEnabled,
+} = require('@librechat/data-schemas');
 const { hasCapability } = require('~/server/middleware/roles/capabilities');
 const { getAppConfig } = require('~/server/services/Config/app');
 
@@ -195,6 +200,7 @@ router.get('/', async function (req, res) {
         ...preLoginPayload,
         socialLogins: baseConfig?.registration?.socialLogins ?? defaultSocialLogins,
         turnstile: baseConfig?.turnstileConfig,
+        guestChatEnabled: isGuestChatEnabled(baseConfig?.guestChat),
       };
 
       const interfaceConfig = baseConfig?.interfaceConfig;
