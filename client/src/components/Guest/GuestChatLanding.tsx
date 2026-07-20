@@ -6,6 +6,7 @@ import MarkdownLite from '~/components/Chat/Messages/Content/MarkdownLite';
 import { useGetStartupConfig, useGuestChatMutation } from '~/data-provider';
 import GuestLoginRequiredDialog from './GuestLoginRequiredDialog';
 import { NotificationSeverity } from '~/common';
+import { cn, removeFocusRings } from '~/utils';
 import { useLocalize } from '~/hooks';
 
 interface GuestChatErrorShape {
@@ -92,14 +93,17 @@ export default function GuestChatLanding() {
             </div>
           </div>
         )}
-        <div className="flex w-full max-w-2xl items-end gap-2 rounded-2xl border border-border-medium bg-surface-primary p-2">
+        <div className="flex w-full max-w-2xl items-end gap-2 rounded-2xl border border-border-medium bg-surface-primary p-2 [&:has(textarea:focus)]:shadow-[0_2px_6px_rgba(0,0,0,.05)]">
           <TextareaAutosize
             aria-label={localize('com_ui_message_input')}
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={handleKeyDown}
             disabled={hasSent || guestChatMutation.isLoading}
-            className="max-h-52 flex-1 resize-none bg-transparent px-2 py-1.5 text-text-primary outline-none"
+            className={cn(
+              'max-h-52 flex-1 resize-none bg-transparent px-2 py-1.5 text-text-primary',
+              removeFocusRings,
+            )}
           />
           <button
             type="button"
