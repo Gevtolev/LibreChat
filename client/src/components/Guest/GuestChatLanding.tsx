@@ -23,6 +23,7 @@ export default function GuestChatLanding() {
   const { showToast } = useToastContext();
   const { data: startupConfig } = useGetStartupConfig();
   const [text, setText] = useState('');
+  const [sentText, setSentText] = useState('');
   const [hasSent, setHasSent] = useState(false);
   const [reply, setReply] = useState<string | null>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -54,6 +55,7 @@ export default function GuestChatLanding() {
       setShowLoginDialog(true);
       return;
     }
+    setSentText(trimmed);
     guestChatMutation.mutate({ text: trimmed });
     setText('');
   };
@@ -83,7 +85,7 @@ export default function GuestChatLanding() {
         ) : (
           <div className="flex w-full max-w-2xl flex-col gap-4">
             <div className="self-end rounded-2xl bg-surface-tertiary px-4 py-2 text-text-primary">
-              {text || undefined}
+              {sentText}
             </div>
             <div className="text-text-primary">
               <MarkdownLite content={reply} />

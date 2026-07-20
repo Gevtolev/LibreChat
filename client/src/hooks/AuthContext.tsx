@@ -46,6 +46,7 @@ const AuthContextProvider = ({
   children: ReactNode;
 }) => {
   const isExternalRedirectRef = useRef(false);
+  const hasFiredInitialSilentRefreshRef = useRef(false);
   const [user, setUser] = useRecoilState(store.user);
   const logoutRedirectRef = useRef<string | undefined>(undefined);
   const [token, setToken] = useState<string | undefined>(undefined);
@@ -67,10 +68,21 @@ const AuthContextProvider = ({
   });
 
   const navigate = useNavigate();
-  const { data: startupConfig } = useGetStartupConfig();
-  /** Read fresh inside `silentRefresh`'s stale closure (empty useCallback deps below). */
+  const { data: startupConfig, isLoading: isStartupConfigLoading } = useGetStartupConfig();
+  /**
+   * Read fresh inside `silentRefresh`'s stale closure (empty useCallback deps
+   * below). Latched true-only: `useRefreshTokenMutation`'s `onMutate` calls
+   * `queryClient.removeQueries()`, which wipes this same startup-config query
+   * and briefly resets `startupConfig` to `undefined` while it refetches. If
+   * this ref tracked that value verbatim, a `silentRefresh` callback racing
+   * that transient gap would see `false` and incorrectly redirect to
+   * `/login` even though guest chat is enabled. `guestChatEnabled` doesn't
+   * change mid-session, so once observed true it stays true.
+   */
   const guestChatEnabledRef = useRef(false);
-  guestChatEnabledRef.current = !!startupConfig?.guestChatEnabled;
+  if (startupConfig?.guestChatEnabled) {
+    guestChatEnabledRef.current = true;
+  }
 
   const setUserContext = useMemo(
     () =>
@@ -246,6 +258,26 @@ const AuthContextProvider = ({
       doSetError(undefined);
     }
     if (token == null || !token || !isAuthenticated) {
+      /**
+       * Fire the initial silent-refresh attempt exactly once. Without this
+       * guard, waiting on `isStartupConfigLoading` below creates a feedback
+       * loop: `silentRefresh` -> `useRefreshTokenMutation`'s `onMutate` calls
+       * `queryClient.removeQueries()` -> wipes the startup-config cache too
+       * -> `isStartupConfigLoading` flips back to true -> this effect
+       * re-fires as it loads again -> once loaded, fires `silentRefresh`
+       * again -> repeat forever.
+       */
+      if (hasFiredInitialSilentRefreshRef.current) {
+        return;
+      }
+      /** Wait for startup config so the guest-accessible redirect-skip below
+       * doesn't race a still-loading `guestChatEnabled` and redirect to
+       * `/login` before it's known whether guest chat is enabled. */
+      const onGuestPath = isGuestAccessiblePath(window.location.pathname);
+      if (onGuestPath && isStartupConfigLoading) {
+        return;
+      }
+      hasFiredInitialSilentRefreshRef.current = true;
       silentRefresh();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doSetError is a new reference every render (useTimeout doesn't memoize it); adding it would re-run this effect on every render
@@ -259,6 +291,7 @@ const AuthContextProvider = ({
     setUser,
     navigate,
     silentRefresh,
+    isStartupConfigLoading,
     setUserContext,
   ]);
 

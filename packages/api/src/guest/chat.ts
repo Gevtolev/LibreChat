@@ -80,7 +80,26 @@ export async function runGuestChat({
   const llmConfig: LLMConfig = {
     ...(options.llmConfig as LLMConfig),
     provider: overrideProvider as Providers,
+    /**
+     * `initializeXxx` defaults `streaming: true` for the authenticated SSE
+     * chat flow. Guest chat returns one JSON response (no SSE consumer), so
+     * without this override the run hangs waiting on stream events nobody
+     * reads until it eventually times out.
+     */
+    streaming: false,
+    disableStreaming: true,
+    maxRetries: 0,
   };
+  /**
+   * `getOptions` (e.g. `initializeOpenAI`) returns `baseURL`/reverse-proxy
+   * config as a separate `configOptions` object, not nested inside
+   * `llmConfig` — the authenticated agent flow merges it the same way
+   * (`~/agents/initialize.ts`). Without this, the reverse proxy URL is
+   * silently dropped and the client falls back to the real provider API.
+   */
+  if (options.configOptions) {
+    (llmConfig as Record<string, unknown>).configuration = options.configOptions;
+  }
 
   const run = await Run.create({
     runId: uuidv4(),
