@@ -72,7 +72,7 @@ export default function GuestChatLanding() {
     <div className="flex h-full w-full flex-col bg-presentation">
       <div className="flex items-center justify-between p-4">
         <span className="text-lg font-semibold text-text-primary">
-          {startupConfig?.appTitle ?? 'Graupel'}
+          {startupConfig?.appTitle ?? 'ChatChat'}
         </span>
         <Button variant="outline" onClick={() => navigate('/login')}>
           {localize('com_auth_login')}

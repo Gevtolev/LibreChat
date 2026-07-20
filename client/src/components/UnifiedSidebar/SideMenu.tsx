@@ -27,7 +27,7 @@ import ConversationsSection from './ConversationsSection';
 
 const AccountSettings = lazy(() => import('~/components/Nav/AccountSettings'));
 
-const FALLBACK_FEEDBACK_HREF = 'mailto:feedback@graupel.chat';
+const FALLBACK_FEEDBACK_HREF = 'mailto:feedback@chatchat.chat';
 
 const NavRow = memo(function NavRow({
   icon: Icon,

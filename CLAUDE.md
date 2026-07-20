@@ -1,10 +1,10 @@
 # LibreChat
 
-> ⚠️ **Active fork context — Graupel.** This repository is being forked into a commercial SaaS named **Graupel** (multi-LLM "AI Workspace" subscription, overseas English market, use.ai-style positioning). Until stage 1 of the fork lands, the upstream LibreChat guidance below remains authoritative for code style and workspace boundaries. See the "Graupel Fork Context" section below for active project context, divergences from upstream, and links to design specs.
+> ⚠️ **Active fork context — ChatChat.** This repository is being forked into a commercial SaaS named **ChatChat** (multi-LLM "AI Workspace" subscription, overseas English market, use.ai-style positioning). Until stage 1 of the fork lands, the upstream LibreChat guidance below remains authoritative for code style and workspace boundaries. See the "ChatChat Fork Context" section below for active project context, divergences from upstream, and links to design specs.
 
 ---
 
-## Graupel Fork Context
+## ChatChat Fork Context
 
 **Source of truth**: design specs at [docs/superpowers/specs/](docs/superpowers/specs/).
 
@@ -17,13 +17,13 @@
 | [stage-4-marketing](docs/superpowers/specs/2026-05-21-graupel-stage-4-marketing.md) | Landing / pricing / legal / waitlist pages with SSG (vike) |
 | [stage-5-launch](docs/superpowers/specs/2026-05-21-graupel-stage-5-launch.md) | Sentry, PostHog, MongoDB backups, email automation, invite-only beta launch |
 
-**Always read the relevant stage spec before implementing in that area.** Don't infer Graupel decisions from CLAUDE.md alone — the specs cover edge cases, security, and rationale.
+**Always read the relevant stage spec before implementing in that area.** Don't infer ChatChat decisions from CLAUDE.md alone — the specs cover edge cases, security, and rationale.
 
 ### Divergences from upstream LibreChat
 
 Design decisions that override or extend the upstream guidance:
 
-- **Repository will be renamed** to `graupel` (stage 1). Brand strings and visible UI change; internal schema names and DB collection names stay LibreChat-style to avoid migrations.
+- **Repository will be renamed** to `chatchat` (stage 1). Brand strings and visible UI change; internal schema names and DB collection names stay LibreChat-style to avoid migrations.
 - **Endpoints cut from MVP**: Bedrock, Vertex, Ollama, OpenAI Assistants. Their `EModelEndpoint` enum values stay (for old conversation deserialization), but implementations and UI entry points are removed.
 - **Auth providers cut**: Discord, Apple, Facebook, SAML, LDAP, OpenID.
 - **Auth providers kept**: Local password (UI-collapsed fallback), Google, GitHub, plus new email magic link (stage 2).
@@ -33,7 +33,7 @@ Design decisions that override or extend the upstream guidance:
 - **Quota check-and-increment must be atomic** (single `findOneAndUpdate` with `$inc` and upper-bound filter). Never read-then-write — race conditions will let users overrun their plan.
 - **Cost auditing via `UsageLog`** (per `user_id × model_id × day`). Internal only; never exposed to users.
 
-### Code locations for Graupel-specific work
+### Code locations for ChatChat-specific work
 
 New business code goes into existing workspaces — no new top-level packages:
 

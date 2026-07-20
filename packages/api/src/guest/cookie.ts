@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Request, Response } from 'express';
 import { shouldUseSecureCookie } from '~/oauth/csrf';
 
-export const GUEST_COOKIE_NAME = 'graupel_guest_id';
+export const GUEST_COOKIE_NAME = 'chatchat_guest_id';
 const GUEST_COOKIE_PATH = '/api';
 const DEFAULT_GUEST_COOKIE_DAYS = 30;
 

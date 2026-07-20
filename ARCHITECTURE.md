@@ -1,6 +1,6 @@
 # 技术架构
 
-> 本仓库是 [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) 的 fork,正在向商用 SaaS **Graupel** 转型。本文档描述**当前代码现状**;Graupel 与上游的差异统一在 [§12 Graupel fork divergences](#12-graupel-fork-divergences) 列出,目标态(stage 1-5 完成)详见 [docs/superpowers/specs/](docs/superpowers/specs/)。
+> 本仓库是 [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) 的 fork,正在向商用 SaaS **ChatChat** 转型。本文档描述**当前代码现状**;ChatChat 与上游的差异统一在 [§12 ChatChat fork divergences](#12-chatchat-fork-divergences) 列出,目标态(stage 1-5 完成)详见 [docs/superpowers/specs/](docs/superpowers/specs/)。
 
 文档约定:
 - 路径形如 [api/server/index.js](api/server/index.js) 是可点击的源码引用
@@ -15,7 +15,7 @@
 | 形态 | npm workspaces monorepo + Turborepo build orchestration |
 | 进程模型 | **单 Node 进程**(Express)同时承担 REST API + SSE 流式响应 + 静态托管 (`client/dist`) |
 | 部署形态 | Docker Compose,5 容器:`api` / `mongodb` / `meilisearch` / `vectordb` (pgvector) / `rag_api` |
-| 离线交付包 | [dist-images/graupelchat-images.tar.gz](dist-images/) — 5 镜像 + compose + .env 模板 |
+| 离线交付包 | [dist-images/chatchat-images.tar.gz](dist-images/) — 5 镜像 + compose + .env 模板 |
 | 数据库 | **MongoDB**(主存)+ **Meilisearch**(全文)+ **pgvector**(RAG)+ **Redis**(可选,session/限流/缓存) |
 | LLM 集成 | OpenAI / Anthropic / Google / Bedrock 原生 SDK + 任意 OpenAI 兼容代理(Custom Endpoint) |
 | Agent 引擎 | 外部依赖 [`@librechat/agents`](packages/api/package.json) v3.1.96(上游同团队仓库) |
@@ -127,7 +127,7 @@ MongoDB     Meilisearch       Redis        pgvector
 |---|---|---|
 | HTTP | **Express 5** + cors + compression + express-static-gzip | static-gzip 直接 serve `client/dist` |
 | 安全 | express-mongo-sanitize + express-rate-limit (+ rate-limit-redis) + helmet 等价手写 middleware | |
-| 认证 | **passport** 多策略 | jwt / local / google / github / openid / saml / ldap / apple / discord / facebook;Graupel 计划砍到 google/github/local/magic-link |
+| 认证 | **passport** 多策略 | jwt / local / google / github / openid / saml / ldap / apple / discord / facebook;ChatChat 计划砍到 google/github/local/magic-link |
 | Session | express-session + connect-redis(可选) + jsonwebtoken (主) + bcryptjs(密码哈希) | JWT 是主流,session 仅 OAuth 回跳 |
 | ORM | **mongoose 8** | schema 在 [packages/data-schemas/src/schema/](packages/data-schemas/src/schema/) |
 | 全文搜索 | **meilisearch** | 启动时 `indexSync()` 同步对话/消息索引 |
@@ -148,14 +148,14 @@ MongoDB     Meilisearch       Redis        pgvector
 |---|---|---|
 | **用户身份** | `user` / `session` / `token` / `pluginAuth` / `key` | user 1:N session;`pluginAuth` 存第三方 OAuth credentials |
 | **会话** | `convo` / `message` / `share` / `conversationTag` / `preset` | convo 1:N message;share 是 convo 的只读快照 |
-| **LLM 资源** | `agent` / `agentApiKey` / `agentCategory` / `assistant` / `action` / `prompt` / `promptGroup` | agent 是 LibreChat 自有概念(用 `@librechat/agents` 执行);assistant 是 OpenAI Assistants API 的镜像(Graupel 计划砍) |
+| **LLM 资源** | `agent` / `agentApiKey` / `agentCategory` / `assistant` / `action` / `prompt` / `promptGroup` | agent 是 LibreChat 自有概念(用 `@librechat/agents` 执行);assistant 是 OpenAI Assistants API 的镜像(ChatChat 计划砍) |
 | **工具与插件** | `skill` / `skillFile` / `toolCall` / `mcpServer` | skill = 用户自上传的代码工具;toolCall 记录执行;mcpServer 注册 MCP endpoints |
 | **计费 / 配额** | `balance` / `transaction` | balance per-user,transaction 流水 |
 | **权限** | `role` / `accessRole` / `aclEntry` / `group` / `systemGrant` | RBAC + 资源级 ACL,`aclEntry` 是 (subject, resource, permission) 三元组 |
 | **文件 / 记忆** | `file` / `memory` | file 索引上传文件元数据;memory 是 long-term memory 条目 |
 | **系统** | `banner` / `categories` / `config` | banner 顶部公告;config 持久化的运行时配置(覆盖 yaml) |
 
-注:Graupel MVP 计划新增的 schema 见 §12,不在此表内。
+注:ChatChat MVP 计划新增的 schema 见 §12,不在此表内。
 
 ---
 
@@ -260,7 +260,7 @@ client/index.html
 | [client/src/hooks/](client/src/hooks/) | 通用 hooks(非 React Query) |
 | [client/src/store/](client/src/store/) | Recoil atoms / selectors |
 | [client/src/Providers/](client/src/Providers/) | Context Providers(主题、API 错误边界、Badge 等) |
-| [client/src/locales/](client/src/locales/) | i18next 资源,**仅修改 en/translation.json**(其他语言由 locize 自动同步,Graupel fork 例外:见 §12) |
+| [client/src/locales/](client/src/locales/) | i18next 资源,**仅修改 en/translation.json**(其他语言由 locize 自动同步,ChatChat fork 例外:见 §12) |
 | [client/src/utils/](client/src/utils/) | 纯函数工具 |
 
 ### 7.4 数据流约定
@@ -278,7 +278,7 @@ client/index.html
 | **认证** | passport jwt/local + 各 OAuth 策略 → [api/strategies/](api/strategies/);JWT 在 cookie + Authorization header 双轨;refresh token 在 [api/server/services/AuthService.js](api/server/services/AuthService.js) 等价处 |
 | **RBAC + ACL** | 角色定义 [packages/data-schemas/src/schema/role.ts](packages/data-schemas/src/schema/role.ts);资源 ACL 在 [packages/data-schemas/src/schema/aclEntry.ts](packages/data-schemas/src/schema/aclEntry.ts);中间件 `capabilityContextMiddleware` 在 [api/server/middleware/](api/server/middleware/) |
 | **SSE 流** | backend [packages/api/src/stream/](packages/api/src/stream/) 创建 token-by-token stream;frontend [client/src/data-provider/SSE/](client/src/data-provider/SSE/) 用 `sse.js` 接 |
-| **文件管线** | 多后端 storage abstraction 在 [packages/api/src/files/](packages/api/src/files/) 与 [packages/api/src/storage/](packages/api/src/storage/);本地 / S3 / Azure Blob / Firebase / SharePoint;Graupel 计划用 R2 |
+| **文件管线** | 多后端 storage abstraction 在 [packages/api/src/files/](packages/api/src/files/) 与 [packages/api/src/storage/](packages/api/src/storage/);本地 / S3 / Azure Blob / Firebase / SharePoint;ChatChat 计划用 R2 |
 | **缓存** | Keyv 多 backend(内存 / 文件 / redis);用法分散,搜索 `from 'keyv'` 可定位 |
 | **限流** | express-rate-limit + 可选 redis store,阀值在 .env |
 | **配置加载** | 见 §10 |
@@ -350,7 +350,7 @@ AppConfig (in-memory)        (api/server/services/Config/)
 
 | 服务 | 镜像 | 角色 | 必要性 |
 |---|---|---|---|
-| `api` | `graupelchat:latest`(本仓库构建) | Express + 前端 dist | 必需 |
+| `api` | `chatchat:latest`(本仓库构建) | Express + 前端 dist | 必需 |
 | `mongodb` | `mongo:8.0.20` | 主数据库 | 必需 |
 | `meilisearch` | `getmeili/meilisearch:v1.35.1` | 全文搜索 | 必需(搜索功能依赖) |
 | `vectordb` | `pgvector/pgvector:0.8.0-pg15` | RAG 向量存储 | 仅用 RAG 时必需 |
@@ -360,7 +360,7 @@ AppConfig (in-memory)        (api/server/services/Config/)
 
 ### 11.2 离线交付包
 
-[dist-images/](dist-images/) 含 `graupelchat-images.tar.gz`(5 镜像合并,~1.76 GB)+ `docker-compose.yml` + `.env.example` + 部署文档。`docker load -i graupelchat-images.tar.gz` 即可在无外网服务器加载(rag_api 容器首次仍需联网拉 embedding 模型)。
+[dist-images/](dist-images/) 含 `chatchat-images.tar.gz`(5 镜像合并,~1.76 GB)+ `docker-compose.yml` + `.env.example` + 部署文档。`docker load -i chatchat-images.tar.gz` 即可在无外网服务器加载(rag_api 容器首次仍需联网拉 embedding 模型)。
 
 ### 11.3 反向代理要求(SSE)
 
@@ -369,7 +369,7 @@ AppConfig (in-memory)        (api/server/services/Config/)
 - `proxy_read_timeout 600s`(长回复)
 - `proxy_set_header Host / X-Real-IP / X-Forwarded-For / X-Forwarded-Proto`
 
-### 11.4 Graupel 目标部署
+### 11.4 ChatChat 目标部署
 
 stage 5 launch 后(参 [stage-5-launch spec](docs/superpowers/specs/2026-05-21-graupel-stage-5-launch.md)):
 - 应用层:**Hetzner** + **Coolify**(自动部署)
@@ -381,22 +381,22 @@ stage 5 launch 后(参 [stage-5-launch spec](docs/superpowers/specs/2026-05-21-g
 
 ---
 
-## 12. Graupel fork divergences
+## 12. ChatChat fork divergences
 
 > 完整设计:[docs/superpowers/specs/2026-05-21-graupel-mvp-design.md](docs/superpowers/specs/2026-05-21-graupel-mvp-design.md)
 
 ### 12.1 与上游的关键差异
 
-| 领域 | 上游 LibreChat | Graupel 决策 |
+| 领域 | 上游 LibreChat | ChatChat 决策 |
 |---|---|---|
-| **品牌** | LibreChat | **Graupel**(repo 即将改名)。内部 schema/collection 名保持 LibreChat 原样以避免迁移 |
+| **品牌** | LibreChat | **ChatChat**(repo 即将改名)。内部 schema/collection 名保持 LibreChat 原样以避免迁移 |
 | **Endpoints (砍)** | OpenAI / Anthropic / Google / Bedrock / Vertex / Ollama / Assistants / Custom / Agents | **保留** OpenAI / Anthropic / Google / Custom / Agents;**砍** Bedrock / Vertex / Ollama / OpenAI Assistants(`EModelEndpoint` 枚举值保留以反序列化老对话,UI 入口去掉) |
 | **Auth providers (砍)** | Discord / Apple / Facebook / SAML / LDAP / OpenID | **保留** Local password(UI 折叠) / Google / GitHub;**新增** Email Magic Link(参 [stage-2 spec](docs/superpowers/specs/2026-05-21-graupel-stage-2-magic-link.md)) |
 | **Agents + MCP** | 默认显示 | **默认隐藏**,仅 Pro 用户可见(stage 3 plan gating) |
 | **支付** | 无 | **MVP 不接 Stripe**;plan 变更通过 admin API / CLI;事件驱动 `applyPlanChange()` 是唯一入口 |
 | **Quota / 配额** | balance schema | 新增 `Subscription` / `Quota` / `UsageLog`;原子 check-and-increment(单 `findOneAndUpdate`) |
 | **Marketing 站** | 无 | 新增 SSG(vike)落地页 + pricing + waitlist + 法务页面(stage 4) |
-| **i18n 规则** | 仅改 `en/translation.json`,其他语言由 locize 自动同步 | Graupel **同时改 `zh-Hans`**(中文用户为主,无 locize),其他语言仍走 locize |
+| **i18n 规则** | 仅改 `en/translation.json`,其他语言由 locize 自动同步 | ChatChat **同时改 `zh-Hans`**(中文用户为主,无 locize),其他语言仍走 locize |
 
 ### 12.2 新增 collection(MVP 上线时落地)
 
@@ -457,8 +457,8 @@ stage 5 launch 后(参 [stage-5-launch spec](docs/superpowers/specs/2026-05-21-g
 
 ### 14.1 项目内文档
 
-- [CLAUDE.md](CLAUDE.md) — 工作约定 + Graupel fork context + 上游编码规范
-- [docs/superpowers/specs/](docs/superpowers/specs/) — Graupel 5 阶段设计稿(MVP 设计 + 各阶段实现细节)
+- [CLAUDE.md](CLAUDE.md) — 工作约定 + ChatChat fork context + 上游编码规范
+- [docs/superpowers/specs/](docs/superpowers/specs/) — ChatChat 5 阶段设计稿(MVP 设计 + 各阶段实现细节)
 - [dist-images/README.md](dist-images/README.md) — 离线部署包说明
 
 ### 14.2 上游参考
@@ -474,8 +474,8 @@ stage 5 launch 后(参 [stage-5-launch spec](docs/superpowers/specs/2026-05-21-g
 | **Endpoint** | LibreChat 中"一个 LLM provider 接入点"的统称(不是 HTTP endpoint) |
 | **Custom Endpoint** | 通过 librechat.yaml 声明的 OpenAI 兼容代理 |
 | **Agent** | LibreChat 自有的 multi-step + tool calling 实体,执行引擎是 `@librechat/agents` |
-| **Assistant** | OpenAI Assistants API 的镜像(Graupel 计划砍) |
+| **Assistant** | OpenAI Assistants API 的镜像(ChatChat 计划砍) |
 | **Skill** | 用户上传的代码工具,沙箱执行 |
 | **MCP Server** | 通过 Model Context Protocol 暴露工具的第三方 server |
 | **AppConfig** | 启动时合并 .env + yaml + DB config 后构造的运行时配置对象 |
-| **applyPlanChange** | Graupel 唯一的 Subscription 写入入口(事件驱动,admin/CLI/未来 Stripe webhook 都经此函数) |
+| **applyPlanChange** | ChatChat 唯一的 Subscription 写入入口(事件驱动,admin/CLI/未来 Stripe webhook 都经此函数) |

@@ -1,6 +1,6 @@
 # Upstream Sync Strategy
 
-This repository is a commercial fork of [LibreChat](https://github.com/danny-avila/LibreChat), renamed to **Graupel**.
+This repository is a commercial fork of [LibreChat](https://github.com/danny-avila/LibreChat), renamed to **ChatChat**.
 
 ## Sync Policy
 
@@ -25,4 +25,4 @@ git log --oneline upstream/main..HEAD | head -20
 ## History
 
 - Forked from LibreChat at commit `e236e8d68` on 2026-05-21
-- Reason: commercial SaaS product (Graupel) targeting overseas English market
+- Reason: commercial SaaS product (ChatChat) targeting overseas English market

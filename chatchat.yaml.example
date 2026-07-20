@@ -1,4 +1,4 @@
-# Graupel Configuration
+# ChatChat Configuration
 # Copy this file to `librechat.yaml` (or set CONFIG_PATH) and adjust values.
 #
 # 上游统一走 gptsapi.net(OpenAI 兼容中转,单 ${GPTSAPI_KEY}):
