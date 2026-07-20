@@ -99,7 +99,7 @@ export default function GuestChatLanding() {
             value={text}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={hasSent || guestChatMutation.isLoading}
+            disabled={guestChatMutation.isLoading}
             className={cn(
               'max-h-52 flex-1 resize-none bg-transparent px-2 py-1.5 text-text-primary',
               removeFocusRings,
@@ -109,7 +109,7 @@ export default function GuestChatLanding() {
             type="button"
             aria-label={localize('com_nav_send_message')}
             onClick={submitText}
-            disabled={!text.trim() || hasSent || guestChatMutation.isLoading}
+            disabled={!text.trim() || guestChatMutation.isLoading}
             className="rounded-full bg-text-primary p-1.5 text-text-primary outline-offset-4 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-10"
           >
             {guestChatMutation.isLoading ? <Spinner className="size-4" /> : <SendIcon size={24} />}
