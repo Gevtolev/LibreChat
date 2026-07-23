@@ -37,7 +37,11 @@ let mockCapturedLogoutOptions: {
 };
 
 const mockRefreshMutate = jest.fn();
-const mockGetStartupConfig = jest.fn(() => ({ data: { guestChatEnabled: false } }));
+const mockAnonymousLoginMutate = jest.fn();
+const mockGetStartupConfig = jest.fn<
+  { data: { anonymousAccessEnabled: boolean } | undefined; isLoading: boolean },
+  []
+>(() => ({ data: { anonymousAccessEnabled: false }, isLoading: false }));
 
 jest.mock('~/data-provider', () => ({
   useLoginUserMutation: jest.fn(
@@ -59,6 +63,7 @@ jest.mock('~/data-provider', () => ({
     },
   ),
   useRefreshTokenMutation: jest.fn(() => ({ mutate: mockRefreshMutate })),
+  useAnonymousLoginMutation: jest.fn(() => ({ mutate: mockAnonymousLoginMutate })),
   useGetUserQuery: jest.fn(() => ({
     data: undefined,
     isError: false,
@@ -70,7 +75,10 @@ jest.mock('~/data-provider', () => ({
 }));
 
 afterEach(() => {
-  mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: false } });
+  mockGetStartupConfig.mockReturnValue({
+    data: { anonymousAccessEnabled: false },
+    isLoading: false,
+  });
 });
 
 const authConfig: TAuthConfig = { loginRedirect: '/login', test: true };
@@ -368,7 +376,7 @@ describe('AuthContextProvider — silentRefresh post-login redirect', () => {
   });
 });
 
-describe('AuthContextProvider — guest-accessible path redirect skip', () => {
+describe('AuthContextProvider — anonymous session bootstrap', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -377,8 +385,11 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('does not redirect to /login when unauthenticated on / with no refresh token and guestChatEnabled', () => {
-    mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: true } });
+  it('bootstraps an anonymous session instead of redirecting when anonymousAccessEnabled and refresh returns no token', () => {
+    mockGetStartupConfig.mockReturnValue({
+      data: { anonymousAccessEnabled: true },
+      isLoading: false,
+    });
     window.history.replaceState({}, '', '/');
     renderProviderLive();
 
@@ -392,10 +403,14 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockAnonymousLoginMutate).toHaveBeenCalledTimes(1);
   });
 
-  it('does not redirect to /login when unauthenticated on /c/new after a refresh error and guestChatEnabled', () => {
-    mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: true } });
+  it('bootstraps an anonymous session instead of redirecting after a refresh error when anonymousAccessEnabled', () => {
+    mockGetStartupConfig.mockReturnValue({
+      data: { anonymousAccessEnabled: true },
+      isLoading: false,
+    });
     window.history.replaceState({}, '', '/c/new');
     renderProviderLive();
 
@@ -409,33 +424,77 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockAnonymousLoginMutate).toHaveBeenCalledTimes(1);
   });
 
-  it('still redirects to /login when unauthenticated on a non-whitelisted path even with guestChatEnabled', () => {
-    mockGetStartupConfig.mockReturnValue({ data: { guestChatEnabled: true } });
-    window.history.replaceState({}, '', '/bookmarks');
+  it('becomes authenticated once the anonymous bootstrap call succeeds', () => {
+    jest.useFakeTimers();
+    mockGetStartupConfig.mockReturnValue({
+      data: { anonymousAccessEnabled: true },
+      isLoading: false,
+    });
+    window.history.replaceState({}, '', '/');
+    const { getByTestId } = renderProviderLive();
+
+    const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
+      unknown,
+      { onSuccess: (data: unknown) => void },
+    ];
+    act(() => {
+      refreshOptions.onSuccess({ user: undefined, token: '' });
+    });
+
+    const [, anonymousOptions] = mockAnonymousLoginMutate.mock.calls[0] as [
+      unknown,
+      { onSuccess: (data: unknown) => void },
+    ];
+    act(() => {
+      anonymousOptions.onSuccess({ user: { id: 'anon-1', role: 'GUEST' }, token: 'anon-token' });
+    });
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    expect(getByTestId('consumer').getAttribute('data-authenticated')).toBe('true');
+    // No explicit redirect target was passed — the visitor stays on the current page.
+    expect(mockNavigate).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('redirects to /login if the anonymous bootstrap call itself fails', () => {
+    mockGetStartupConfig.mockReturnValue({
+      data: { anonymousAccessEnabled: true },
+      isLoading: false,
+    });
+    window.history.replaceState({}, '', '/');
     renderProviderLive();
 
     const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
       unknown,
       { onSuccess: (data: unknown) => void },
     ];
-
     act(() => {
       refreshOptions.onSuccess({ user: undefined, token: '' });
+    });
+
+    const [, anonymousOptions] = mockAnonymousLoginMutate.mock.calls[0] as [
+      unknown,
+      { onError: (error: unknown) => void },
+    ];
+    act(() => {
+      anonymousOptions.onError(new Error('bootstrap failed'));
     });
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
   });
 
   /**
-   * Regression test: guestChatEnabled defaults to false/unconfigured (the
-   * production default). Without gating the redirect-skip on this flag, an
-   * unauthenticated visit to `/` never redirects to `/login` AND `Root.tsx`
-   * has nothing to render in its place (guest landing page is also gated on
-   * guestChatEnabled) — the user sees a permanent blank page.
+   * Regression test: anonymousAccessEnabled defaults to false/unconfigured (the
+   * production default). Without gating on this flag, an unauthenticated visit
+   * never redirects to `/login` AND has nothing else rendered in its place —
+   * the user sees a permanent blank page.
    */
-  it('still redirects to /login on / when guestChatEnabled is false (default)', () => {
+  it('still redirects to /login on / when anonymousAccessEnabled is false (default)', () => {
     window.history.replaceState({}, '', '/');
     renderProviderLive();
 
@@ -449,6 +508,68 @@ describe('AuthContextProvider — guest-accessible path redirect skip', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockAnonymousLoginMutate).not.toHaveBeenCalled();
+  });
+});
+
+describe('AuthContextProvider — silentRefresh fires exactly once (no removeQueries loop)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  /**
+   * Regression test: `useRefreshTokenMutation`'s `onMutate` calls
+   * `queryClient.removeQueries()`, which wipes the startup-config query too,
+   * so `isStartupConfigLoading` genuinely flips true -> false -> true -> ...
+   * as it refetches after every `silentRefresh` call. Without the
+   * `hasFiredInitialSilentRefreshRef` guard, each flip back to `false`
+   * re-triggers `silentRefresh`, which wipes the cache again — an infinite
+   * loop of `refreshToken`/`config` requests. This asserts the mutation
+   * fires exactly once no matter how many times loading toggles.
+   */
+  it('does not re-fire refreshToken when startup-config loading toggles repeatedly after the first fire', () => {
+    window.history.replaceState({}, '', '/');
+    mockGetStartupConfig.mockReturnValue({ data: undefined, isLoading: true });
+    const { rerender } = renderProviderLive();
+
+    const rerenderTree = () =>
+      rerender(
+        <QueryClientProvider client={new QueryClient()}>
+          <RecoilRoot>
+            <MemoryRouter>
+              <AuthContextProvider authConfig={{ loginRedirect: '/login' }}>
+                <TestConsumer />
+              </AuthContextProvider>
+            </MemoryRouter>
+          </RecoilRoot>
+        </QueryClientProvider>,
+      );
+
+    expect(mockRefreshMutate).not.toHaveBeenCalled();
+
+    mockGetStartupConfig.mockReturnValue({ data: { anonymousAccessEnabled: true }, isLoading: false });
+    act(() => {
+      rerenderTree();
+    });
+    expect(mockRefreshMutate).toHaveBeenCalledTimes(1);
+
+    // Simulate removeQueries() wiping the startup-config cache mid-flight.
+    mockGetStartupConfig.mockReturnValue({ data: undefined, isLoading: true });
+    act(() => {
+      rerenderTree();
+    });
+    expect(mockRefreshMutate).toHaveBeenCalledTimes(1);
+
+    // Simulate the wiped query refetching and resolving again.
+    mockGetStartupConfig.mockReturnValue({ data: { anonymousAccessEnabled: true }, isLoading: false });
+    act(() => {
+      rerenderTree();
+    });
+    expect(mockRefreshMutate).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -633,6 +754,31 @@ describe('AuthContextProvider — custom role detection and fetching', () => {
     for (const call of sentinelCalls) {
       expect(call[1]).toEqual(expect.objectContaining({ enabled: false }));
     }
+
+    jest.useRealTimers();
+  });
+
+  it('calls useGetRole with enabled: true for GUEST role users (anonymous accounts)', () => {
+    jest.useFakeTimers();
+
+    renderProviderLive();
+
+    const [, refreshOptions] = mockRefreshMutate.mock.calls[0] as [
+      unknown,
+      { onSuccess: (data: unknown) => void },
+    ];
+
+    act(() => {
+      refreshOptions.onSuccess({ user: { id: '1', role: 'GUEST' }, token: 'tok' });
+    });
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    const guestCalls = mockUseGetRole.mock.calls.filter(([name]: [string]) => name === 'GUEST');
+    expect(guestCalls.length).toBeGreaterThan(0);
+    const lastGuestCall = guestCalls[guestCalls.length - 1];
+    expect(lastGuestCall[1]).toEqual(expect.objectContaining({ enabled: true }));
 
     jest.useRealTimers();
   });

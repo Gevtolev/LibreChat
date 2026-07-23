@@ -794,18 +794,7 @@ imageGeneration:
           paramValues: ['1K', '2K', '4K']
           defaultParam: '1K'
 
-# Guest trial chat configuration. Lets an unauthenticated visitor send a
-# limited number of free trial messages before being asked to log in.
-# Enabled once `provider`/`model` are configured (no separate `enabled: true` needed).
-# guestChat:
-#   # (optional) Explicitly disable guest trial chat
-#   enabled: true
-#   provider: "openai"
-#   model: "gpt-4o-mini"
-#   # (optional) System instructions for the guest trial LLM turn
-#   # instructions: "You are a helpful assistant."
-#   # (optional) Extra model parameters (e.g. temperature)
-#   # model_parameters:
-#   #   temperature: 0.4
-#   # (optional) Number of free trial messages per guest (defaults to 1)
-#   # messageLimit: 1
+# Silently creates a real, anonymous account (role: GUEST) for unauthenticated visitors so
+# they flow through the same chat/file-upload pipeline as everyone else, capped to a single
+# free trial message via the `anonymous` billing plan.
+# anonymousAccess: true

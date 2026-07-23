@@ -1151,7 +1151,7 @@ export type TStartupConfig = {
   modelDescriptions?: Record<string, Record<string, string>>;
   sharedLinksEnabled: boolean;
   publicSharedLinksEnabled: boolean;
-  guestChatEnabled?: boolean;
+  anonymousAccessEnabled?: boolean;
   analyticsGtmId?: string;
   bundlerURL?: string;
   staticBundlerURL?: string;
@@ -1364,17 +1364,6 @@ export const memorySchema = z.object({
 
 export type TMemoryConfig = DeepPartial<z.infer<typeof memorySchema>>;
 
-export const guestChatSchema = z.object({
-  enabled: z.boolean().optional(),
-  provider: z.string(),
-  model: z.string(),
-  instructions: z.string().optional(),
-  model_parameters: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
-  messageLimit: z.number().int().positive().optional().default(1),
-});
-
-export type TGuestChatConfig = DeepPartial<z.infer<typeof guestChatSchema>>;
-
 export const summarizationTriggerSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('token_ratio'),
@@ -1421,7 +1410,7 @@ export const configSchema = z.object({
   ocr: ocrSchema.optional(),
   webSearch: webSearchSchema.optional(),
   memory: memorySchema.optional(),
-  guestChat: guestChatSchema.optional(),
+  anonymousAccess: z.boolean().optional(),
   summarization: summarizationConfigSchema.optional(),
   secureImageLinks: z.boolean().optional(),
   imageOutputType: z.nativeEnum(EImageOutputType).default(EImageOutputType.PNG),
@@ -2359,6 +2348,8 @@ export enum LocalStorageKeys {
   PIN_WEB_SEARCH_ = 'PIN_WEB_SEARCH_',
   /** Pin state for Code Interpreter per conversation ID */
   PIN_CODE_INTERPRETER_ = 'PIN_CODE_INTERPRETER_',
+  /** Key for the last login method used (social provider id or 'email') */
+  LAST_LOGIN_METHOD = 'lastLoginMethod',
 }
 
 export enum ForkOptions {

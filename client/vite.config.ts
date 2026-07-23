@@ -88,8 +88,8 @@ export default defineConfig(({ command }) => ({
       },
       includeAssets: [],
       manifest: {
-        name: 'Graupel',
-        short_name: 'Graupel',
+        name: 'ChatChat',
+        short_name: 'ChatChat',
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#009688',

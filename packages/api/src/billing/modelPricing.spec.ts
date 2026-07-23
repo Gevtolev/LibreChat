@@ -7,7 +7,7 @@ jest.mock('@librechat/data-schemas', () => ({
 }));
 
 describe('MODEL_PRICING', () => {
-  it('has entries for all graupel.yaml models', () => {
+  it('has entries for all chatchat.yaml models', () => {
     const required = [
       'gpt-5',
       'gpt-5-mini',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { SystemRoles } from 'librechat-data-provider';
 import { useMediaQuery } from '@librechat/client';
 import {
   useSearchEnabled,
@@ -18,12 +19,10 @@ import {
   FileMapContext,
 } from '~/Providers';
 import { useUserTermsQuery, useGetStartupConfig } from '~/data-provider';
-import { GuestChatLanding } from '~/components/Guest';
 import { UnifiedSidebar } from '~/components/UnifiedSidebar';
 import { TermsAndConditionsModal } from '~/components/ui';
 import { useHealthCheck } from '~/data-provider';
 import { Banner } from '~/components/Banners';
-import { isGuestAccessiblePath } from '~/utils';
 
 export default function Root() {
   const [showTerms, setShowTerms] = useState(false);
@@ -31,13 +30,18 @@ export default function Root() {
   const sidebarExpanded = useRecoilValue(store.sidebarExpanded);
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
 
-  const { isAuthenticated, logout } = useAuthContext();
-  const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuthContext();
+  /**
+   * GUEST (anonymous) accounts can't list agents/assistants — skip the fetch rather than let it
+   * 403. Requires `user` to already be loaded (not just `isAuthenticated`) since the two can
+   * commit in separate renders, which would otherwise let this default to `true` for a tick.
+   */
+  const canUseAgentsAndAssistants = isAuthenticated && !!user && user.role !== SystemRoles.GUEST;
 
   useHealthCheck(isAuthenticated);
 
-  const assistantsMap = useAssistantsMap({ isAuthenticated });
-  const agentsMap = useAgentsMap({ isAuthenticated });
+  const assistantsMap = useAssistantsMap({ isAuthenticated: canUseAgentsAndAssistants });
+  const agentsMap = useAgentsMap({ isAuthenticated: canUseAgentsAndAssistants });
   const fileMap = useFileMap({ isAuthenticated });
 
   const { data: config } = useGetStartupConfig();
@@ -63,9 +67,6 @@ export default function Root() {
   };
 
   if (!isAuthenticated) {
-    if (config?.guestChatEnabled && isGuestAccessiblePath(location.pathname)) {
-      return <GuestChatLanding />;
-    }
     return null;
   }
 

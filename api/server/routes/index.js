@@ -24,7 +24,6 @@ const models = require('./models');
 const convos = require('./convos');
 const config = require('./config');
 const agents = require('./agents');
-const guest = require('./guest');
 const roles = require('./roles');
 const oauth = require('./oauth');
 const files = require('./files');
@@ -57,7 +56,6 @@ module.exports = {
   convos,
   search,
   config,
-  guest,
   models,
   prompts,
   projects,

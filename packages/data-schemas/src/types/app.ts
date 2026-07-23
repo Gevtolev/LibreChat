@@ -5,7 +5,6 @@ import type {
   TAzureConfig,
   TCustomConfig,
   TMemoryConfig,
-  TGuestChatConfig,
   EModelEndpoint,
   TAgentsEndpoint,
   CloudFrontConfig,
@@ -57,8 +56,8 @@ export interface AppConfig {
   };
   /** Memory configuration */
   memory?: TMemoryConfig;
-  /** Guest trial chat configuration */
-  guestChat?: TGuestChatConfig;
+  /** Whether unauthenticated visitors get a silent anonymous account */
+  anonymousAccess?: boolean;
   /** Summarization configuration */
   summarization?: SummarizationConfig;
   /** Web search configuration */

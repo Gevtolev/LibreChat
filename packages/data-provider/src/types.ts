@@ -714,14 +714,6 @@ export type TAcceptTermsResponse = {
 
 export type TBannerResponse = TBanner | null;
 
-export type TGuestChatRequest = {
-  text: string;
-};
-
-export type TGuestChatResponse = {
-  text: string;
-};
-
 export type TUpdateFeedbackRequest = {
   feedback?: TMinimalFeedback;
 };

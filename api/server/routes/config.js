@@ -8,12 +8,7 @@ const {
   excludeHiddenModelSpecs,
 } = require('@librechat/api');
 const { defaultSocialLogins } = require('librechat-data-provider');
-const {
-  logger,
-  getTenantId,
-  SystemCapabilities,
-  isGuestChatEnabled,
-} = require('@librechat/data-schemas');
+const { logger, getTenantId, SystemCapabilities } = require('@librechat/data-schemas');
 const { hasCapability } = require('~/server/middleware/roles/capabilities');
 const { getAppConfig } = require('~/server/services/Config/app');
 
@@ -57,7 +52,7 @@ function buildSharedPayload() {
 
   /** @type {Partial<TStartupConfig>} */
   const payload = {
-    appTitle: process.env.APP_TITLE || 'Graupel',
+    appTitle: process.env.APP_TITLE || 'ChatChat',
     discordLoginEnabled: !!process.env.DISCORD_CLIENT_ID && !!process.env.DISCORD_CLIENT_SECRET,
     facebookLoginEnabled: !!process.env.FACEBOOK_CLIENT_ID && !!process.env.FACEBOOK_CLIENT_SECRET,
     githubLoginEnabled: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
@@ -88,7 +83,7 @@ function buildSharedPayload() {
       isBirthday() ||
       isEnabled(process.env.SHOW_BIRTHDAY_ICON) ||
       process.env.SHOW_BIRTHDAY_ICON === '',
-    helpAndFaqURL: process.env.HELP_AND_FAQ_URL || 'https://graupel.chat',
+    helpAndFaqURL: process.env.HELP_AND_FAQ_URL || 'https://chatchat.chat',
     sharedLinksEnabled,
     publicSharedLinksEnabled,
     analyticsGtmId: process.env.ANALYTICS_GTM_ID,
@@ -200,7 +195,8 @@ router.get('/', async function (req, res) {
         ...preLoginPayload,
         socialLogins: baseConfig?.registration?.socialLogins ?? defaultSocialLogins,
         turnstile: baseConfig?.turnstileConfig,
-        guestChatEnabled: isGuestChatEnabled(baseConfig?.guestChat),
+        anonymousAccessEnabled: baseConfig?.anonymousAccess === true,
+        modelSpecs: sanitizeModelSpecs(excludeHiddenModelSpecs(baseConfig?.modelSpecs)),
       };
 
       const interfaceConfig = baseConfig?.interfaceConfig;

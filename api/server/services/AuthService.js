@@ -10,6 +10,7 @@ const { ErrorTypes, SystemRoles, errorsToString } = require('librechat-data-prov
 const {
   math,
   isEnabled,
+  applyPlanChange,
   checkEmailConfig,
   setCloudFrontCookies,
   getCloudFrontConfig,
@@ -31,10 +32,15 @@ const {
   deleteTokens,
   deleteSession,
   createSession,
+  createQuota,
   generateToken,
   deleteUserById,
+  createSubscription,
   generateRefreshToken,
+  expireActiveSubscriptions,
+  getActiveSubscriptionRecord,
 } = require('~/models');
+const { getPriorAnonymousUserId } = require('./anonymousAccount');
 const { registerSchema } = require('~/strategies/validators');
 const { getAppConfig } = require('~/server/services/Config');
 const { sendEmail } = require('~/server/utils');
@@ -121,7 +127,7 @@ const sendVerificationEmail = async (user) => {
     email: user.email,
     subject: 'Verify your email',
     payload: {
-      appName: process.env.APP_TITLE || 'Graupel',
+      appName: process.env.APP_TITLE || 'ChatChat',
       name: user.name || user.username || user.email,
       verificationLink: verificationLink,
       year: new Date().getFullYear(),
@@ -194,7 +200,7 @@ const verifyEmail = async (req) => {
  * @param {Partial<IUser>} [additionalData={}]
  * @returns {Promise<{status: number, message: string, user?: IUser}>}
  */
-const registerUser = async (user, additionalData = {}) => {
+const registerUser = async (user, additionalData = {}, req = null) => {
   const { error } = registerSchema.safeParse(user);
   if (error) {
     const errorMessage = errorsToString(error.errors);
@@ -251,7 +257,24 @@ const registerUser = async (user, additionalData = {}) => {
     const emailEnabled = checkEmailConfig();
     const disableTTL = isEnabled(process.env.ALLOW_UNVERIFIED_EMAIL_LOGIN);
 
-    const newUser = await createUser(newUserData, appConfig.balance, disableTTL, true);
+    /**
+     * Registering while holding a still-valid anonymous session upgrades that SAME account
+     * in place (same `_id`, so its conversations/files need no migration) instead of creating
+     * a brand-new document — `updateUser` already `$unset`s `expiresAt`, converting the
+     * TTL-bound anonymous placeholder into a permanent one, exactly like unverified-email
+     * accounts convert on verification.
+     */
+    const priorAnonymousUserId = req ? await getPriorAnonymousUserId(req) : null;
+    let newUser;
+    if (priorAnonymousUserId) {
+      newUser = await updateUser(priorAnonymousUserId, { ...newUserData, role: SystemRoles.USER });
+      await applyPlanChange(
+        { user_id: newUser._id, plan_code: 'free', source: 'system_default' },
+        { getActiveSubscriptionRecord, expireActiveSubscriptions, createSubscription, createQuota },
+      );
+    } else {
+      newUser = await createUser(newUserData, appConfig.balance, disableTTL, true);
+    }
     newUserId = newUser._id;
     if (emailEnabled && !newUser.emailVerified) {
       await sendVerificationEmail({
@@ -352,7 +375,7 @@ const requestPasswordReset = async (req) => {
       email: user.email,
       subject: 'Password Reset Request',
       payload: {
-        appName: process.env.APP_TITLE || 'Graupel',
+        appName: process.env.APP_TITLE || 'ChatChat',
         name: user.name || user.username || user.email,
         link: link,
         year: new Date().getFullYear(),
@@ -408,7 +431,7 @@ const resetPassword = async (userId, token, password) => {
       email: user.email,
       subject: 'Password Reset Successfully',
       payload: {
-        appName: process.env.APP_TITLE || 'Graupel',
+        appName: process.env.APP_TITLE || 'ChatChat',
         name: user.name || user.username || user.email,
         year: new Date().getFullYear(),
       },
@@ -739,7 +762,7 @@ const resendVerificationEmail = async (req) => {
       email: user.email,
       subject: 'Verify your email',
       payload: {
-        appName: process.env.APP_TITLE || 'Graupel',
+        appName: process.env.APP_TITLE || 'ChatChat',
         name: user.name || user.username || user.email,
         verificationLink: verificationLink,
         year: new Date().getFullYear(),

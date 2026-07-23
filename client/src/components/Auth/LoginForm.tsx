@@ -5,7 +5,7 @@ import { ThemeContext, Spinner, Button, isDark } from '@librechat/client';
 import type { TLoginUser, TStartupConfig } from 'librechat-data-provider';
 import type { TAuthContext } from '~/common';
 import { useResendVerificationEmail } from '~/data-provider';
-import { validateEmail } from '~/utils';
+import { validateEmail, getLastLoginMethod, setLastLoginMethod } from '~/utils';
 import { useLocalize } from '~/hooks';
 
 type TLoginFormProps = {
@@ -83,7 +83,10 @@ const LoginForm: React.FC<TLoginFormProps> = ({ onSubmit, startupConfig, error, 
         className="mt-6"
         aria-label="Login form"
         method="POST"
-        onSubmit={handleSubmit((data) => onSubmit(data))}
+        onSubmit={handleSubmit((data) => {
+          setLastLoginMethod('email');
+          onSubmit(data);
+        })}
       >
         <div className="mb-4">
           <div className="relative">
@@ -162,7 +165,12 @@ const LoginForm: React.FC<TLoginFormProps> = ({ onSubmit, startupConfig, error, 
           </div>
         )}
 
-        <div className="mt-6">
+        <div className="relative mt-6">
+          {getLastLoginMethod() === 'email' && (
+            <span className="absolute -top-2 right-2 rounded-full border border-border-light bg-surface-secondary px-2 py-0.5 text-xs text-text-secondary">
+              {localize('com_auth_last_used')}
+            </span>
+          )}
           <Button
             aria-label={localize('com_auth_continue')}
             data-testid="login-button"

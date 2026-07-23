@@ -154,6 +154,10 @@ export const login = (payload: t.TLoginUser): Promise<t.TLoginResponse> => {
   return request.post(endpoints.login(), payload);
 };
 
+export const anonymousLogin = (): Promise<t.TLoginResponse> => {
+  return request.post(endpoints.anonymousLogin());
+};
+
 export const logout = (): Promise<m.TLogoutResponse> => {
   return request.post(endpoints.logout());
 };
@@ -1184,10 +1188,6 @@ export function acceptTerms(): Promise<t.TAcceptTermsResponse> {
 
 export function getBanner(): Promise<t.TBannerResponse> {
   return request.get(endpoints.banner());
-}
-
-export function guestChat(payload: t.TGuestChatRequest): Promise<t.TGuestChatResponse> {
-  return request.post(endpoints.guestChat(), payload);
 }
 
 export function updateFeedback(

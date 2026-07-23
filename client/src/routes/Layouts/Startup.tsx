@@ -44,7 +44,7 @@ export default function StartupLayout({ isAuthenticated }: { isAuthenticated?: b
   }, [isAuthenticated, navigate, data]);
 
   useEffect(() => {
-    document.title = startupConfig?.appTitle || 'Graupel';
+    document.title = startupConfig?.appTitle || 'ChatChat';
   }, [startupConfig?.appTitle]);
 
   useEffect(() => {

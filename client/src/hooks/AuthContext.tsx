@@ -26,9 +26,10 @@ import {
   useLogoutUserMutation,
   useRefreshTokenMutation,
   useGetStartupConfig,
+  useAnonymousLoginMutation,
 } from '~/data-provider';
 import { TAuthConfig, TUserContext, TAuthContext, TResError } from '~/common';
-import { SESSION_KEY, isSafeRedirect, getPostLoginRedirect, isGuestAccessiblePath } from '~/utils';
+import { SESSION_KEY, isSafeRedirect, getPostLoginRedirect } from '~/utils';
 import useTimeout from './useTimeout';
 import store from '~/store';
 
@@ -46,6 +47,7 @@ const AuthContextProvider = ({
   children: ReactNode;
 }) => {
   const isExternalRedirectRef = useRef(false);
+  const hasFiredInitialSilentRefreshRef = useRef(false);
   const [user, setUser] = useRecoilState(store.user);
   const logoutRedirectRef = useRef<string | undefined>(undefined);
   const [token, setToken] = useState<string | undefined>(undefined);
@@ -62,15 +64,29 @@ const AuthContextProvider = ({
   const { data: adminRole = null } = useGetRole(SystemRoles.ADMIN, {
     enabled: !!(isAuthenticated && user?.role === SystemRoles.ADMIN),
   });
+  const { data: guestRole = null } = useGetRole(SystemRoles.GUEST, {
+    enabled: !!(isAuthenticated && user?.role === SystemRoles.GUEST),
+  });
   const { data: customRole = null } = useGetRole(isCustomRole ? userRoleName : '_', {
     enabled: isCustomRole,
   });
 
   const navigate = useNavigate();
-  const { data: startupConfig } = useGetStartupConfig();
-  /** Read fresh inside `silentRefresh`'s stale closure (empty useCallback deps below). */
-  const guestChatEnabledRef = useRef(false);
-  guestChatEnabledRef.current = !!startupConfig?.guestChatEnabled;
+  const { data: startupConfig, isLoading: isStartupConfigLoading } = useGetStartupConfig();
+  /**
+   * Read fresh inside `silentRefresh`'s stale closure (empty useCallback deps
+   * below). Latched true-only: `useRefreshTokenMutation`'s `onMutate` calls
+   * `queryClient.removeQueries()`, which wipes this same startup-config query
+   * and briefly resets `startupConfig` to `undefined` while it refetches. If
+   * this ref tracked that value verbatim, a `silentRefresh` callback racing
+   * that transient gap would see `false` and incorrectly redirect to
+   * `/login` even though anonymous access is enabled. `anonymousAccessEnabled`
+   * doesn't change mid-session, so once observed true it stays true.
+   */
+  const anonymousAccessEnabledRef = useRef(false);
+  if (startupConfig?.anonymousAccessEnabled) {
+    anonymousAccessEnabledRef.current = true;
+  }
 
   const setUserContext = useMemo(
     () =>
@@ -159,6 +175,7 @@ const AuthContextProvider = ({
     },
   });
   const refreshToken = useRefreshTokenMutation();
+  const anonymousLogin = useAnonymousLoginMutation();
 
   const logout = useCallback(
     (redirect?: string) => {
@@ -184,6 +201,25 @@ const AuthContextProvider = ({
     if (isExternalRedirectRef.current) {
       return;
     }
+    const bootstrapAnonymousOrRedirect = () => {
+      if (!anonymousAccessEnabledRef.current) {
+        navigate(buildLoginRedirectUrl());
+        return;
+      }
+      anonymousLogin.mutate(undefined, {
+        onSuccess: (data: t.TLoginResponse) => {
+          const { user, token = '' } = data;
+          if (!token) {
+            navigate(buildLoginRedirectUrl());
+            return;
+          }
+          setUserContext({ user, token, isAuthenticated: true, redirect: undefined });
+        },
+        onError: () => {
+          navigate(buildLoginRedirectUrl());
+        },
+      });
+    };
     refreshToken.mutate(undefined, {
       onSuccess: (data: t.TRefreshTokenResponse | undefined) => {
         if (isExternalRedirectRef.current) {
@@ -210,10 +246,7 @@ const AuthContextProvider = ({
         if (authConfig?.test === true) {
           return;
         }
-        if (guestChatEnabledRef.current && isGuestAccessiblePath(window.location.pathname)) {
-          return;
-        }
-        navigate(buildLoginRedirectUrl());
+        bootstrapAnonymousOrRedirect();
       },
       onError: (error) => {
         if (isExternalRedirectRef.current) {
@@ -223,13 +256,10 @@ const AuthContextProvider = ({
         if (authConfig?.test === true) {
           return;
         }
-        if (guestChatEnabledRef.current && isGuestAccessiblePath(window.location.pathname)) {
-          return;
-        }
-        navigate(buildLoginRedirectUrl());
+        bootstrapAnonymousOrRedirect();
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are stable at mount; adding refreshToken causes infinite re-fire
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are stable at mount; adding refreshToken/anonymousLogin causes infinite re-fire
   }, []);
 
   useEffect(() => {
@@ -246,6 +276,25 @@ const AuthContextProvider = ({
       doSetError(undefined);
     }
     if (token == null || !token || !isAuthenticated) {
+      /**
+       * Fire the initial silent-refresh attempt exactly once. Without this
+       * guard, waiting on `isStartupConfigLoading` below creates a feedback
+       * loop: `silentRefresh` -> `useRefreshTokenMutation`'s `onMutate` calls
+       * `queryClient.removeQueries()` -> wipes the startup-config cache too
+       * -> `isStartupConfigLoading` flips back to true -> this effect
+       * re-fires as it loads again -> once loaded, fires `silentRefresh`
+       * again -> repeat forever.
+       */
+      if (hasFiredInitialSilentRefreshRef.current) {
+        return;
+      }
+      /** Wait for startup config so the anonymous-bootstrap decision below
+       * doesn't race a still-loading `anonymousAccessEnabled` and redirect to
+       * `/login` before it's known whether anonymous access is enabled. */
+      if (isStartupConfigLoading) {
+        return;
+      }
+      hasFiredInitialSilentRefreshRef.current = true;
       silentRefresh();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- doSetError is a new reference every render (useTimeout doesn't memoize it); adding it would re-run this effect on every render
@@ -259,6 +308,7 @@ const AuthContextProvider = ({
     setUser,
     navigate,
     silentRefresh,
+    isStartupConfigLoading,
     setUserContext,
   ]);
 
@@ -290,6 +340,7 @@ const AuthContextProvider = ({
       roles: {
         [SystemRoles.USER]: userRole,
         [SystemRoles.ADMIN]: adminRole,
+        [SystemRoles.GUEST]: guestRole,
         ...(isCustomRole && customRole ? { [userRoleName]: customRole } : {}),
       },
       isAuthenticated,
@@ -302,6 +353,7 @@ const AuthContextProvider = ({
       token,
       userRole,
       adminRole,
+      guestRole,
       isCustomRole,
       userRoleName,
       customRole,

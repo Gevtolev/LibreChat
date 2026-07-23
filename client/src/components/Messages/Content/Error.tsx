@@ -1,8 +1,8 @@
 // file deepcode ignore HardcodedNonCryptoSecret: No hardcoded secrets
-import { ViolationTypes, ErrorTypes, alternateName } from 'librechat-data-provider';
+import { ViolationTypes, ErrorTypes, SystemRoles, alternateName } from 'librechat-data-provider';
 import type { LocalizeFunction } from '~/common';
 import { formatJSON, extractJson, isJson } from '~/utils/json';
-import { useLocalize } from '~/hooks';
+import { useLocalize, useAuthContext } from '~/hooks';
 import CodeBlock from './CodeBlock';
 
 const localizedErrorPrefix = 'com_error';
@@ -122,7 +122,14 @@ const errorMessages = {
     const { feature } = json;
     return localize('com_error_feature_not_available', { 0: feature });
   },
-  upgrade_required_quota: (json: TUpgradeRequiredQuota, localize: LocalizeFunction) => {
+  upgrade_required_quota: (
+    json: TUpgradeRequiredQuota,
+    localize: LocalizeFunction,
+    role?: string,
+  ) => {
+    if (role === SystemRoles.GUEST) {
+      return localize('com_error_upgrade_required_quota_guest');
+    }
     const { limit } = json;
     return localize('com_error_upgrade_required_quota', { 0: String(limit) });
   },
@@ -152,6 +159,7 @@ const errorMessages = {
 
 const Error = ({ text }: { text: string }) => {
   const localize = useLocalize();
+  const { user } = useAuthContext();
   const jsonString = extractJson(text);
   const errorMessage = text.length > 512 && !jsonString ? text.slice(0, 512) + '...' : text;
   const defaultResponse = `Something went wrong. Here's the specific error message we encountered: ${errorMessage}`;
@@ -165,7 +173,7 @@ const Error = ({ text }: { text: string }) => {
   const keyExists = errorKey && errorMessages[errorKey];
 
   if (keyExists && typeof errorMessages[errorKey] === 'function') {
-    return errorMessages[errorKey](json, localize);
+    return errorMessages[errorKey](json, localize, user?.role);
   } else if (keyExists && keyExists.startsWith(localizedErrorPrefix)) {
     return localize(errorMessages[errorKey]);
   } else if (keyExists) {

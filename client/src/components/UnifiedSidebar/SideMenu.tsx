@@ -17,17 +17,17 @@ import {
   MessageCircleHeart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { QueryKeys } from 'librechat-data-provider';
+import { QueryKeys, SystemRoles, PermissionTypes, Permissions } from 'librechat-data-provider';
 import { isDark, Button, Skeleton, ThemeContext, TooltipAnchor } from '@librechat/client';
 import { useGetStartupConfig } from '~/data-provider';
-import { useLocalize, useNewConvo } from '~/hooks';
+import { useLocalize, useNewConvo, useAuthContext, useHasAccess } from '~/hooks';
 import { clearMessagesCache, cn } from '~/utils';
 import store from '~/store';
 import ConversationsSection from './ConversationsSection';
 
 const AccountSettings = lazy(() => import('~/components/Nav/AccountSettings'));
 
-const FALLBACK_FEEDBACK_HREF = 'mailto:feedback@graupel.chat';
+const FALLBACK_FEEDBACK_HREF = 'mailto:feedback@chatchat.chat';
 
 const NavRow = memo(function NavRow({
   icon: Icon,
@@ -66,6 +66,16 @@ function SideMenu({ onCollapse }: { onCollapse?: () => void }) {
   const conversation = useRecoilValue(store.conversationByIndex(0));
   const { theme, setTheme } = useContext(ThemeContext);
   const { data: startupConfig } = useGetStartupConfig();
+  const { user } = useAuthContext();
+  const isGuest = user?.role === SystemRoles.GUEST;
+  const canUseBookmarks = useHasAccess({
+    permissionType: PermissionTypes.BOOKMARKS,
+    permission: Permissions.USE,
+  });
+  const canUseMemories = useHasAccess({
+    permissionType: PermissionTypes.MEMORIES,
+    permission: Permissions.USE,
+  });
   const brand = startupConfig?.appTitle ?? 'LibreChat';
   const dark = isDark(theme);
 
@@ -152,31 +162,39 @@ function SideMenu({ onCollapse }: { onCollapse?: () => void }) {
           label={localize('com_ui_projects')}
           onClick={() => navigate('/projects')}
         />
-        <NavRow
-          icon={Bookmark}
-          label={localize('com_ui_bookmarks')}
-          onClick={() => navigate('/bookmarks')}
-        />
+        {canUseBookmarks && (
+          <NavRow
+            icon={Bookmark}
+            label={localize('com_ui_bookmarks')}
+            onClick={() => navigate('/bookmarks')}
+          />
+        )}
         <NavRow
           icon={Image}
           label={localize('com_ui_images')}
           onClick={() => navigate('/images')}
         />
-        <NavRow
-          icon={Brain}
-          label={localize('com_ui_memories')}
-          onClick={() => navigate('/memories')}
-        />
-        <NavRow
-          icon={LayoutGrid}
-          label={localize('com_ui_apps')}
-          onClick={() => navigate('/apps')}
-        />
-        <NavRow
-          icon={Telescope}
-          label={localize('com_ui_deep_research')}
-          onClick={() => navigate('/deep-research')}
-        />
+        {canUseMemories && (
+          <NavRow
+            icon={Brain}
+            label={localize('com_ui_memories')}
+            onClick={() => navigate('/memories')}
+          />
+        )}
+        {!isGuest && (
+          <NavRow
+            icon={LayoutGrid}
+            label={localize('com_ui_apps')}
+            onClick={() => navigate('/apps')}
+          />
+        )}
+        {!isGuest && (
+          <NavRow
+            icon={Telescope}
+            label={localize('com_ui_deep_research')}
+            onClick={() => navigate('/deep-research')}
+          />
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col px-2 pt-2">
@@ -192,9 +210,19 @@ function SideMenu({ onCollapse }: { onCollapse?: () => void }) {
           <MessageCircleHeart className="h-4 w-4" aria-hidden="true" />
           {localize('com_nav_share_feedback')}
         </button>
-        <Suspense fallback={<Skeleton className="h-12 w-full rounded-xl" />}>
-          <AccountSettings />
-        </Suspense>
+        {isGuest ? (
+          <Button
+            variant="submit"
+            className="h-9 w-full rounded-lg"
+            onClick={() => navigate('/login')}
+          >
+            {localize('com_auth_login')}
+          </Button>
+        ) : (
+          <Suspense fallback={<Skeleton className="h-12 w-full rounded-xl" />}>
+            <AccountSettings />
+          </Suspense>
+        )}
       </div>
     </div>
   );

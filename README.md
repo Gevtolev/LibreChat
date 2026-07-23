@@ -1,8 +1,8 @@
-# Graupel
+# ChatChat
 
 > Your AI Workspace — one subscription, all top AI models.
 
-Graupel is a multi-model AI workspace SaaS. Access GPT-5, Claude Opus, Gemini Pro, Grok, DeepSeek and more in one place.
+ChatChat is a multi-model AI workspace SaaS. Access GPT-5, Claude Opus, Gemini Pro, Grok, DeepSeek and more in one place.
 
 ## Development
 

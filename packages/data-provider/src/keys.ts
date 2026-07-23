@@ -101,6 +101,7 @@ export enum MutationKeys {
   updatePreset = 'updatePreset',
   deletePreset = 'deletePreset',
   loginUser = 'loginUser',
+  anonymousLogin = 'anonymousLogin',
   logoutUser = 'logoutUser',
   refreshToken = 'refreshToken',
   avatarUpload = 'avatarUpload',
@@ -130,5 +131,4 @@ export enum MutationKeys {
   updateSkillNodeContent = 'updateSkillNodeContent',
   /* Image Workspace */
   imageGenerate = 'imageGenerate',
-  guestChat = 'guestChat',
 }
