@@ -25,16 +25,16 @@ import { useGetAssistantDocsQuery, useGetEndpointsQuery } from '~/data-provider'
 import { getIconEndpoint, getEntity } from '~/utils';
 import { useSubmitMessage, useLocalize } from '~/hooks';
 
-type TranslationKey = Parameters<ReturnType<typeof useLocalize>>[0];
+export type TranslationKey = Parameters<ReturnType<typeof useLocalize>>[0];
 
-type DefaultStarter = {
+export type DefaultStarter = {
   labelKey: TranslationKey;
   promptKey: TranslationKey;
   icon: LucideIcon;
   suggestionKeys: [TranslationKey, TranslationKey, TranslationKey, TranslationKey];
 };
 
-const DEFAULT_STARTERS: DefaultStarter[] = [
+export const DEFAULT_STARTERS: DefaultStarter[] = [
   {
     labelKey: 'com_ui_starter_help_write',
     promptKey: 'com_ui_starter_help_write_prompt',
@@ -158,13 +158,13 @@ const DEFAULT_STARTERS: DefaultStarter[] = [
   },
 ];
 
-interface SuggestionRowProps {
+export interface SuggestionRowProps {
   text: string;
   prompt: string;
   onSelect: (text: string) => void;
 }
 
-const SuggestionRow = ({ text, prompt, onSelect }: SuggestionRowProps) => {
+export const SuggestionRow = ({ text, prompt, onSelect }: SuggestionRowProps) => {
   const trimmedPrompt = prompt.trimEnd();
   const startsWithPrompt = text.startsWith(trimmedPrompt);
   const head = startsWithPrompt ? trimmedPrompt : '';

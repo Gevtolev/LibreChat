@@ -5,6 +5,9 @@
 # reads process.env.HOST to build the dev-proxy target for /api and /oauth —
 # setting that env var to 0.0.0.0 would break the proxy's connection back to
 # the backend on the same machine.
+#
+# Before starting each server, any process already listening on its port is
+# killed so re-running this script never fails with EADDRINUSE.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -14,6 +17,25 @@ BACKEND_PORT="${PORT:-3080}"
 FRONTEND_PORT="${CLIENT_PORT:-3090}"
 
 LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+
+free_port() {
+  local port="$1"
+  local pids
+  pids="$(lsof -ti "tcp:${port}" 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    echo "Port ${port} in use by PID(s) ${pids} — killing."
+    # shellcheck disable=SC2086
+    kill -9 $pids 2>/dev/null || true
+    # Wait for the port to actually free up rather than racing the next listen().
+    for _ in $(seq 1 20); do
+      lsof -ti "tcp:${port}" >/dev/null 2>&1 || break
+      sleep 0.2
+    done
+  fi
+}
+
+free_port "$BACKEND_PORT"
+free_port "$FRONTEND_PORT"
 
 pids=()
 cleanup() {

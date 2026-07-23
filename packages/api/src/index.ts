@@ -57,8 +57,6 @@ export * from './files';
 export * from './images';
 /* Storage */
 export * from './storage';
-/* Guest */
-export * from './guest';
 /* Tools */
 export * from './tools';
 /* web search */

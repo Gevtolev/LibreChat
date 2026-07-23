@@ -8,7 +8,6 @@ const forkLimiters = require('./forkLimiters');
 const registerLimiter = require('./registerLimiter');
 const toolCallLimiter = require('./toolCallLimiter');
 const messageLimiters = require('./messageLimiters');
-const guestChatLimiter = require('./guestChatLimiter');
 const promptUsageLimiter = require('./promptUsageLimiter');
 const verifyEmailLimiter = require('./verifyEmailLimiter');
 const resetPasswordLimiter = require('./resetPasswordLimiter');
@@ -18,7 +17,6 @@ module.exports = {
   ...uploadLimiters,
   ...importLimiters,
   ...messageLimiters,
-  ...guestChatLimiter,
   ...forkLimiters,
   ...promptUsageLimiter,
   loginLimiter,

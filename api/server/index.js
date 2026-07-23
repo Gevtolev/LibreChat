@@ -26,7 +26,7 @@ const {
   updateInterfacePermissions,
 } = require('@librechat/api');
 const { connectDb, indexSync } = require('~/db');
-const { Quota, GuestUsage } = require('~/db/models');
+const { Quota } = require('~/db/models');
 const {
   updateAccessPermissions,
   sweepOrphanedPreviews,
@@ -75,9 +75,6 @@ const startServer = async () => {
    * quota document. autoIndex is disabled in most deployments (MONGO_AUTO_INDEX),
    * so this index can't be left to Mongoose's automatic, connection-level sync. */
   await Quota.syncIndexes();
-  /* GuestUsage's unique { guest_id } index is load-bearing for the same reason
-   * — incrementGuestUsage()'s atomic check-and-increment depends on it. */
-  await GuestUsage.syncIndexes();
   indexSync().catch((err) => {
     logger.error('[indexSync] Background sync failed:', err);
   });
@@ -214,7 +211,6 @@ const startServer = async () => {
   app.use('/api/balance', routes.balance);
   app.use('/api/models', routes.models);
   app.use('/api/config', preAuthTenantMiddleware, optionalJwtAuth, routes.config);
-  app.use('/api/guest', preAuthTenantMiddleware, routes.guest);
   app.use('/api/files', await routes.files.initialize());
   app.use('/api/images', routes.images);
   app.use('/images/', createValidateImageRequest(appConfig.secureImageLinks), routes.staticRoute);

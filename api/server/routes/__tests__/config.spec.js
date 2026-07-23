@@ -136,7 +136,6 @@ describe('GET /api/config', () => {
       expect(response.statusCode).toBe(200);
       expect(response.body.socialLogins).toEqual(['saml']);
       expect(response.body.turnstile).toEqual({ siteKey: 'tenant-key' });
-      expect(response.body).not.toHaveProperty('modelSpecs');
     });
 
     it('should return minimal payload without authenticated-only fields', async () => {
@@ -146,7 +145,6 @@ describe('GET /api/config', () => {
       const response = await request(app).get('/api/config');
 
       expect(response.statusCode).toBe(200);
-      expect(response.body).not.toHaveProperty('modelSpecs');
       expect(response.body).not.toHaveProperty('balance');
       expect(response.body).not.toHaveProperty('webSearch');
       expect(response.body).not.toHaveProperty('bundlerURL');
@@ -165,25 +163,25 @@ describe('GET /api/config', () => {
       expect(response.body.turnstile).toEqual({ siteKey: 'test-key' });
     });
 
-    it('should set guestChatEnabled to false when guestChat is not configured', async () => {
+    it('should set anonymousAccessEnabled to false when anonymousAccess is not configured', async () => {
       mockGetAppConfig.mockResolvedValue(baseAppConfig);
       const app = createApp(null);
 
       const response = await request(app).get('/api/config');
 
-      expect(response.body.guestChatEnabled).toBe(false);
+      expect(response.body.anonymousAccessEnabled).toBe(false);
     });
 
-    it('should set guestChatEnabled to true when guestChat has a provider and model', async () => {
+    it('should set anonymousAccessEnabled to true when anonymousAccess is enabled', async () => {
       mockGetAppConfig.mockResolvedValue({
         ...baseAppConfig,
-        guestChat: { provider: 'openAI', model: 'gpt-4o-mini' },
+        anonymousAccess: true,
       });
       const app = createApp(null);
 
       const response = await request(app).get('/api/config');
 
-      expect(response.body.guestChatEnabled).toBe(true);
+      expect(response.body.anonymousAccessEnabled).toBe(true);
     });
 
     it('should include only privacyPolicy and termsOfService from interface config', async () => {

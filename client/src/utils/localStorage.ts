@@ -1,5 +1,13 @@
 import { LocalStorageKeys, TConversation, isUUID } from 'librechat-data-provider';
 
+export function getLastLoginMethod() {
+  return localStorage.getItem(LocalStorageKeys.LAST_LOGIN_METHOD);
+}
+
+export function setLastLoginMethod(method: string) {
+  localStorage.setItem(LocalStorageKeys.LAST_LOGIN_METHOD, method);
+}
+
 export function getLocalStorageItems() {
   const items = {
     lastSelectedModel: localStorage.getItem(LocalStorageKeys.LAST_MODEL) ?? '',

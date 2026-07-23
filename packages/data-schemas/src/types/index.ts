@@ -42,6 +42,5 @@ export * from './mcp';
 /* Billing */
 export * from './subscription';
 export * from './quota';
-export * from './guestUsage';
 export * from './usageLog';
 export * from './auditLog';

@@ -154,6 +154,8 @@ export const tokenizer = () => `${BASE_URL}/api/tokenizer`;
 
 export const login = () => `${BASE_URL}/api/auth/login`;
 
+export const anonymousLogin = () => `${BASE_URL}/api/auth/anonymous`;
+
 export const logout = () => `${BASE_URL}/api/auth/logout`;
 
 export const register = () => `${BASE_URL}/api/auth/register`;
@@ -451,7 +453,6 @@ export const addTagToConversation = (conversationId: string) =>
 export const userTerms = () => `${BASE_URL}/api/user/terms`;
 export const acceptUserTerms = () => `${BASE_URL}/api/user/terms/accept`;
 export const banner = () => `${BASE_URL}/api/banner`;
-export const guestChat = () => `${BASE_URL}/api/guest/chat`;
 
 // Message Feedback
 export const feedback = (conversationId: string, messageId: string) =>

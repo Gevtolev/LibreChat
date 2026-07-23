@@ -56,6 +56,7 @@ const PERIOD_DAYS: Record<PlanCode, number> = {
   pro_h: 180,
   trial: 7,
   free: 30,
+  anonymous: 30,
 };
 
 // ---------------------------------------------------------------------------

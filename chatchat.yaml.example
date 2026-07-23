@@ -41,12 +41,10 @@ memory:
       Do NOT store secrets, passwords, API keys, health, or financial details.
       Update/replace existing keys rather than duplicating.
 
-# Lets an unauthenticated visitor send one free trial message before being
-# asked to log in. Forced to a fixed, cheap model — never the client's choice.
-guestChat:
-  provider: "openAI"                 # routed to gptsapi via OPENAI_REVERSE_PROXY
-  model: "gemini-2.5-flash-lite"     # cheap model, same one used for titling/summarizing
-  messageLimit: 1
+# Silently creates a real, anonymous account (role: GUEST) for unauthenticated visitors so
+# they flow through the same chat/file-upload pipeline as everyone else, capped to a single
+# free trial message via the `anonymous` billing plan (packages/api/src/billing/plans.ts).
+anonymousAccess: true
 
 registration:
   socialLogins:
