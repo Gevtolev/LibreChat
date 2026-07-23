@@ -8,8 +8,8 @@ export const PLANS: Record<PlanCode, PlanConfig> = {
     monthly_price_cents: 0,
     allowed_cost_tiers: ['cheap', 'mid', 'expensive'],
     quota_period: 'lifetime',
-    message_limit: 1, // 匿名访客终身 1 条免费消息，发完即要求注册/登录
-    features: { agents: false, image_gen: true, voice: true, web_search: false },
+    message_limit: 3, // 匿名访客终身 3 条免费消息，发完即要求注册/登录
+    features: { agents: false, image_gen: false, voice: true, web_search: false },
   },
   free: {
     code: 'free',
