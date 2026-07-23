@@ -1,17 +1,23 @@
 # ChatChat Configuration
 # Copy this file to `librechat.yaml` (or set CONFIG_PATH) and adjust values.
 #
-# 上游统一走 gptsapi.net(OpenAI 兼容中转,单 ${GPTSAPI_KEY}):
-# - 内置 openAI / anthropic 端点通过 .env 的 OPENAI_REVERSE_PROXY / ANTHROPIC_REVERSE_PROXY
-#   指向 gptsapi(gptsapi 兼容 OpenAI Chat Completions 与 Anthropic Messages 原生协议)。
-# - 内置 google 端点禁用(.env GOOGLE_KEY 留空,gptsapi 不支持 Google GenAI 原生协议),
-#   改用下方 name='Google' 的 custom 端点经 gptsapi 的 OpenAI 兼容接口托管 Gemini。
-# - Grok / DeepSeek / GLM / Kimi / MiniMax 同样用 custom 端点经 gptsapi 托管。
-# 模型选择器由 modelSpecs 策展(enforce 锁定,只显策展卡)。
+# 混合中转策略：
+# - 走 OpenRouter（${OPENROUTER_KEY}, https://openrouter.ai/api/v1）：
+#   xAI / Grok、DeepSeek、GLM、Kimi、MiniMax —— 这几家 OpenRouter 可直连。
+# - 保留 gptsapi.net（${GPTSAPI_KEY}）：
+#   内置 openAI / anthropic 端点经 .env 的 OPENAI_REVERSE_PROXY / ANTHROPIC_REVERSE_PROXY
+#   指向 gptsapi；Gemini / Claude / GPT 的 custom 端点亦经 gptsapi。
+#   （OpenAI / Google / Anthropic 三家在 OpenRouter 上被 provider ToS 拒绝，故不切。）
+# - 内置 google 端点禁用（.env GOOGLE_KEY 留空），改用 name='Gemini' 的 custom 端点经 gptsapi 托管。
+# 模型选择器由 modelSpecs 策展（enforce 锁定，只显策展卡）。
+# anonymousAccess: true —— 未登录访客获得静默 GUEST 账号（3 条试用消息）。
 
 version: 1.3.11
 
 cache: true
+
+# Anonymous visitors get a silent GUEST account (3-message trial)
+anonymousAccess: true
 
 # File storage: use S3-compatible (Cloudflare R2)
 fileStrategy: "s3"
@@ -40,11 +46,6 @@ memory:
       an AI/language model...") as if they were facts about the user.
       Do NOT store secrets, passwords, API keys, health, or financial details.
       Update/replace existing keys rather than duplicating.
-
-# Silently creates a real, anonymous account (role: GUEST) for unauthenticated visitors so
-# they flow through the same chat/file-upload pipeline as everyone else, capped to a single
-# free trial message via the `anonymous` billing plan (packages/api/src/billing/plans.ts).
-anonymousAccess: true
 
 registration:
   socialLogins:
@@ -107,67 +108,66 @@ endpoints:
 
     # xAI — Grok family
     - name: "xAI"
-      apiKey: "${GPTSAPI_KEY}"
-      baseURL: "https://api.gptsapi.net/v1"
+      apiKey: "${OPENROUTER_KEY}"
+      baseURL: "https://openrouter.ai/api/v1"
       models:
         default:
-          - "grok-4.3"
-          - "grok-4-1-fast-non-reasoning"
-          - "grok-4.20-beta-0309-reasoning"
-          - "grok-4.20-beta-0309-non-reasoning"
-          - "grok-4.20-multi-agent-beta-0309"
+          - "x-ai/grok-4.5"
+          - "x-ai/grok-4.3"
+          - "x-ai/grok-4.20"
+          - "x-ai/grok-4.20-multi-agent"
         fetch: false
       titleConvo: true
-      titleModel: "gemini-2.5-flash-lite"
+      titleModel: "x-ai/grok-4.3"
       modelDisplayLabel: "xAI"
       iconURL: "xai"
       dropParams: ["stop"]
 
     # DeepSeek
     - name: "DeepSeek"
-      apiKey: "${GPTSAPI_KEY}"
-      baseURL: "https://api.gptsapi.net/v1"
+      apiKey: "${OPENROUTER_KEY}"
+      baseURL: "https://openrouter.ai/api/v1"
       models:
-        default: ["deepseek-v4-pro", "deepseek-v4-flash"]
+        default: ["deepseek/deepseek-v4-pro", "deepseek/deepseek-v4-flash"]
         fetch: false
       titleConvo: true
-      titleModel: "gemini-2.5-flash-lite"
+      titleModel: "deepseek/deepseek-v4-flash"
       modelDisplayLabel: "DeepSeek"
       dropParams: ["stop"]
 
     # GLM (Zhipu)
     - name: "GLM"
-      apiKey: "${GPTSAPI_KEY}"
-      baseURL: "https://api.gptsapi.net/v1"
+      apiKey: "${OPENROUTER_KEY}"
+      baseURL: "https://openrouter.ai/api/v1"
       models:
-        default: ["glm-5.2", "glm-5-turbo"]
+        default: ["z-ai/glm-5.2", "z-ai/glm-5-turbo"]
         fetch: false
       titleConvo: true
-      titleModel: "gemini-2.5-flash-lite"
+      titleModel: "z-ai/glm-5-turbo"
       modelDisplayLabel: "GLM"
       dropParams: ["stop"]
 
     # Kimi (Moonshot)
     - name: "Kimi"
-      apiKey: "${GPTSAPI_KEY}"
-      baseURL: "https://api.gptsapi.net/v1"
+      apiKey: "${OPENROUTER_KEY}"
+      baseURL: "https://openrouter.ai/api/v1"
       models:
-        default: ["kimi-k2.6"]
+        default: ["moonshotai/kimi-k2.6"]
         fetch: false
       titleConvo: true
-      titleModel: "gemini-2.5-flash-lite"
+      titleModel: "moonshotai/kimi-k2.6"
       modelDisplayLabel: "Kimi"
       dropParams: ["stop"]
 
     # MiniMax
     - name: "MiniMax"
-      apiKey: "${GPTSAPI_KEY}"
-      baseURL: "https://api.gptsapi.net/v1"
+      apiKey: "${OPENROUTER_KEY}"
+      baseURL: "https://openrouter.ai/api/v1"
       models:
-        default: ["MiniMax-M3"]
+        default: ["minimax/minimax-m3"]
         fetch: false
       titleConvo: true
-      titleModel: "gemini-2.5-flash-lite"
+      titleModel: "minimax/minimax-m3"
       modelDisplayLabel: "MiniMax"
       dropParams: ["stop"]
 
@@ -179,7 +179,6 @@ modelSpecs:
     # ---- Gemini ----
     - name: "gemini-2.5-flash"
       label: "Gemini 2.5 Flash"
-      default: true
       group: "Gemini"
       iconURL: "google"
       description: "Fast & efficient"
@@ -261,57 +260,53 @@ modelSpecs:
       group: "Claude"
       iconURL: "anthropic"
       preset: { endpoint: "Claude", model: "claude-haiku-4-5-20251001" }
-    # ---- Grok ----
+    # ---- Grok (via OpenRouter) ----
     - name: "grok-4.3"
       label: "Grok 4.3"
+      default: true
       group: "Grok"
       iconURL: "xai"
-      preset: { endpoint: "xAI", model: "grok-4.3" }
-    - name: "grok-4-1-fast"
-      label: "Grok 4.1 Fast"
+      preset: { endpoint: "xAI", model: "x-ai/grok-4.3" }
+    - name: "grok-4.5"
+      label: "Grok 4.5"
       group: "Grok"
       iconURL: "xai"
-      preset: { endpoint: "xAI", model: "grok-4-1-fast-non-reasoning" }
-    - name: "grok-4.20-reasoning"
-      label: "Grok 4.20 (Reasoning)"
+      preset: { endpoint: "xAI", model: "x-ai/grok-4.5" }
+    - name: "grok-4.20"
+      label: "Grok 4.20"
       group: "Grok"
       iconURL: "xai"
-      preset: { endpoint: "xAI", model: "grok-4.20-beta-0309-reasoning" }
-    - name: "grok-4.20-fast"
-      label: "Grok 4.20 (Fast)"
-      group: "Grok"
-      iconURL: "xai"
-      preset: { endpoint: "xAI", model: "grok-4.20-beta-0309-non-reasoning" }
+      preset: { endpoint: "xAI", model: "x-ai/grok-4.20" }
     - name: "grok-4.20-multi-agent"
       label: "Grok 4.20 Multi-Agent"
       group: "Grok"
       iconURL: "xai"
-      preset: { endpoint: "xAI", model: "grok-4.20-multi-agent-beta-0309" }
+      preset: { endpoint: "xAI", model: "x-ai/grok-4.20-multi-agent" }
     # ---- DeepSeek ----
     - name: "deepseek-v4-pro"
       label: "DeepSeek V4 Pro"
       group: "DeepSeek"
-      preset: { endpoint: "DeepSeek", model: "deepseek-v4-pro" }
+      preset: { endpoint: "DeepSeek", model: "deepseek/deepseek-v4-pro" }
     - name: "deepseek-v4-flash"
       label: "DeepSeek V4 Flash"
       group: "DeepSeek"
-      preset: { endpoint: "DeepSeek", model: "deepseek-v4-flash" }
+      preset: { endpoint: "DeepSeek", model: "deepseek/deepseek-v4-flash" }
     # ---- GLM ----
     - name: "glm-5.2"
       label: "GLM-5.2"
       group: "GLM"
-      preset: { endpoint: "GLM", model: "glm-5.2" }
+      preset: { endpoint: "GLM", model: "z-ai/glm-5.2" }
     - name: "glm-5-turbo"
       label: "GLM-5 Turbo"
       group: "GLM"
-      preset: { endpoint: "GLM", model: "glm-5-turbo" }
+      preset: { endpoint: "GLM", model: "z-ai/glm-5-turbo" }
     # ---- Kimi ----
     - name: "kimi-k2.6"
       label: "Kimi K2.6"
       group: "Kimi"
-      preset: { endpoint: "Kimi", model: "kimi-k2.6" }
+      preset: { endpoint: "Kimi", model: "moonshotai/kimi-k2.6" }
     # ---- MiniMax ----
     - name: "minimax-m3"
       label: "MiniMax M3"
       group: "MiniMax"
-      preset: { endpoint: "MiniMax", model: "MiniMax-M3" }
+      preset: { endpoint: "MiniMax", model: "minimax/minimax-m3" }
