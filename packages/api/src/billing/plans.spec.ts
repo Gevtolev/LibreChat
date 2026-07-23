@@ -9,6 +9,12 @@ describe('PLANS', () => {
       expect(PLANS[code].code).toBe(code);
     }
   });
+  test('anonymous grants a lifetime 3-message trial with image generation disabled', () => {
+    expect(PLANS.anonymous.quota_period).toBe('lifetime');
+    expect(PLANS.anonymous.message_limit).toBe(3);
+    expect(PLANS.anonymous.features.image_gen).toBe(false);
+    expect(PLANS.anonymous.features.agents).toBe(false);
+  });
   test('free only allows cheap tier with a lifetime 3-message limit', () => {
     expect(PLANS.free.allowed_cost_tiers).toEqual(['cheap']);
     expect(PLANS.free.quota_period).toBe('lifetime');
