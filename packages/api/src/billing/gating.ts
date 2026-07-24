@@ -50,17 +50,20 @@ export async function checkBillingAccess(
   args: { userId: string | Types.ObjectId; modelId: string; featureFlag?: FeatureKey },
   deps: GatingDeps,
 ): Promise<void> {
-  /** Testing-phase escape hatch — flip DISABLE_BILLING_GATING off (or unset) to
-   *  re-enable tier/quota enforcement before real launch. */
-  if (isEnabled(process.env.DISABLE_BILLING_GATING)) {
-    return;
-  }
-
   const userId =
     typeof args.userId === 'string' ? (args.userId as unknown as Types.ObjectId) : args.userId;
 
   const sub = await getActiveSubscription(userId, deps);
   const plan = PLANS[sub.plan_code];
+
+  /** Testing-phase escape hatch — flip DISABLE_BILLING_GATING off (or unset) to
+   *  re-enable tier/quota enforcement before real launch. The anonymous free-trial
+   *  cap is always enforced (independent of this flag) so unauthenticated visitors
+   *  stay limited to their trial even while gating is otherwise disabled. */
+  if (plan.code !== 'anonymous' && isEnabled(process.env.DISABLE_BILLING_GATING)) {
+    return;
+  }
+
   const tier = getModelTier(args.modelId);
 
   if (!plan.allowed_cost_tiers.includes(tier)) {
