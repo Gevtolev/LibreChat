@@ -142,6 +142,32 @@ describe('checkBillingAccess — DISABLE_BILLING_GATING escape hatch', () => {
       'upgrade_required_model',
     );
   });
+
+  test('anonymous trial stays enforced even when the flag is enabled', async () => {
+    process.env.DISABLE_BILLING_GATING = 'true';
+    const userId = new mongoose.Types.ObjectId();
+    await applyPlanChange(
+      { user_id: userId, plan_code: 'anonymous', source: 'system_default' },
+      buildApplyDeps(),
+    );
+    const deps = buildGatingDeps();
+
+    // anonymous plan allows all tiers but caps at 3 lifetime messages — 3 pass, 4th denied,
+    // independent of DISABLE_BILLING_GATING (which still exempts non-anonymous users).
+    await expect(
+      checkBillingAccess({ userId, modelId: 'x-ai/grok-4.3' }, deps),
+    ).resolves.toBeUndefined();
+    await expect(
+      checkBillingAccess({ userId, modelId: 'x-ai/grok-4.3' }, deps),
+    ).resolves.toBeUndefined();
+    await expect(
+      checkBillingAccess({ userId, modelId: 'x-ai/grok-4.3' }, deps),
+    ).resolves.toBeUndefined();
+    await expectDenied(
+      checkBillingAccess({ userId, modelId: 'x-ai/grok-4.3' }, deps),
+      'upgrade_required_quota',
+    );
+  });
 });
 
 describe('checkBillingAccess — feature gating', () => {
